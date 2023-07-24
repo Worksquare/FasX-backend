@@ -86,3 +86,9 @@ Fastx is a powerful logistics app that enables users to book and track deliverie
    ```bash
    npm run start
    ```
+
+6. To Test in the Swagger UI. While the app is running, go to the URL below:
+
+   ```bash
+   https://localhost:3000/v1/api-docs/
+   ```
