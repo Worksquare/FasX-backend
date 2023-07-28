@@ -1,9 +1,8 @@
-const jwt = require('jsonwebtoken');
-
 const authService = require('../services/auth.service');
 const BlacklistToken = require('../models/blacklistToken.model');
 const {
     validateCreateUserObject,
+    validateCreateRiderObject,
     validateLoginCredentials,
     validatePasswordChange,
     validateEmailAddress
@@ -21,8 +20,9 @@ const {
  */
 async function httpRegisterUser(req, res, next) {
     try {
-        const { name, email, password } = req.body;
-        const userData = await validateCreateUserObject.parseAsync({ name, email, password });
+        const { firstName, surName, email, address, city, phoneNumer, password } = req.body;
+        const userData = await validateCreateUserObject
+            .parseAsync({ firstName, surName, email, address, city, phoneNumer, password });
 
         const result = await authService.registerUser(userData);
 
@@ -95,12 +95,146 @@ async function httpLoginUser(req, res, next) {
     try {
         const { email, password } = req.body;
 
-        const result = await authService.loginUser(email, password);
+        const userData = validateLoginCredentials.parse({ email, password });
+
+        const result = await authService.loginUser(userData);
 
         res.json({
             message: 'User login successfully',
             accessToken: result.accessToken,
             user: result.user
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * @desc Send mail for password reset
+ * @route POST /v1/auth/forgot_password
+ * @access Public
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next function to call.
+ * @returns {Function} - The success response or an error.
+ */
+async function httpMailForPasswordReset(req, res, next) {
+    try {
+        const { email } = req.body;
+
+        const userData = validateEmailAddress.parse({ email });
+
+        const result = await authService.mailForPasswordReset(userData);
+
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * @desc Validate OTP for password reset
+ * @route PUT /v1/auth/validate_token?token=value&email=value
+ * @access Private
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next function to call.
+ * @returns {Function} - The success response or an error.
+ */
+async function httpValidateOTPForPasswordReset(req, res, next) {
+    try {
+        const { token, email } = req.query;
+
+        console.log('req.query', req.query)
+
+        await authService.validateOTPForPasswordReset(token, email);
+
+        // I will have to resend the user to where they can change their password. 
+        // TODO, I will change this route to the frontend route.
+        res.status(301).redirect('/v1/auth/reset_password')
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * @desc Reset user password
+ * @route PUT /v1/auth/reset_password
+ * @access Private
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next function to call.
+ * @returns {Function} - The success response or an error.
+ */
+async function httpResetUserPassword(req, res, next) {
+    try {
+        const { email, newPassword } = req.body;
+
+        const userData = validatePasswordChange.parse({ email, newPassword });
+
+        const result = await authService.resetUserPassword(id, userData);
+
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * @desc Register a new rider
+ * @route POST /v1/auth/register/rider
+ * @access Public
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next function to call.
+ * @returns {Function} - The success response or an error.
+ */
+async function httpRegisterRider(req, res, next) {
+    try {
+        const { firstName, surName, email, address, city, phoneNumer, password } = req.body;
+        const riderData = await validateCreateUserObject
+            .parseAsync({ firstName, surName, email, address, city, phoneNumer, password });
+
+        const result = await authService.registerRider(riderData);
+
+        res.status(201).json({
+            message: 'Rider registered successfully',
+            accessToken: result.accessToken,
+            user: result.user
+        });;
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * @desc Register a new rider
+ * @route POST /v1/auth/register/rider-docs
+ * @access Private
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next function to call.
+ * @returns {Function} - The success response or an error.
+ */
+async function httpRegisterRiderDocs(req, res, next) {
+    try {
+        const { id } = req.user;
+        const { typeVehicle, color, model, chasisNumber, plateNumber, ownedSince } = req.body;
+
+        const riderData = await validateCreateRiderObject
+            .parseAsync({ typeVehicle, color, model, chasisNumber, plateNumber, ownedSince });
+
+        const result = await authService.registerRiderDocs(id, riderData);
+
+        res.status(201).json({
+            message: 'Rider registered successfully',
+            accessToken: result.accessToken,
+            user: result.user,
         });
     } catch (error) {
         next(error);
@@ -152,72 +286,20 @@ async function httpUnlockAccount(req, res, next) {
 }
 
 /**
- * @desc Send mail for password reset
- * @route POST /v1/auth/forgot_password
- * @access Public
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpMailForPasswordReset(req, res, next) {
-    try {
-        const { email } = req.body;
-
-        const userData = validateEmailAddress.parse({ email });
-
-        const result = await authService.mailForPasswordReset(userData);
-
-        res.status(200).json(result);
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Validate OTP for password reset
- * @route PUT /v1/auth/validate_otp
+ * @desc Google callback route to give user access token
+ * @route GET /v1/auth/google/callback
  * @access Private
  *
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
  * @returns {Function} - The success response or an error.
  */
-async function httpValidateOTPForPasswordReset(req, res, next) {
+async function httpGoogleCallback(req, res, next) {
     try {
-        const { id } = req.user;
-        const { OTP } = req.body;
+        const profile = req.user;
+        const { status, data } = await authService.handleGoogleCallback(profile);
 
-        const result = await authService.validateOTPForPasswordReset(id, OTP);
-
-        res.status(200).json(result);
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Reset user password
- * @route PUT /v1/auth/reset_password
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpResetUserPassword(req, res, next) {
-    try {
-        const { id } = req.user;
-        const { newPassword } = req.body;
-
-        const userData = validatePasswordChange.parse({ newPassword });
-
-        const result = await authService.resetUserPassword(id, userData);
-
-        res.status(200).json(result);
+        res.status(status).json(data);
     } catch (error) {
         next(error);
     }
@@ -246,47 +328,18 @@ async function httpLogoutUser(req, res, next) {
     }
 }
 
-/**
- * @desc Callback route to give user access token
- * @route GET /v1/auth/google/callback
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @returns {Function} - The success response or an error.
- */
-function httpGoogleCallback(req, res) {
-    const payload = {
-        id: req.user._id,
-        role: req.user.role,
-        iat: Date.now()
-    };
-
-    const options = { expiresIn: '1d' };
-  
-    const token = jwt.sign(payload, process.env.JWT_ACCESS_TOKEN_SECRET, options);
-
-    res.status(201).json({
-        message: 'Google Access granted',
-        accessToken: token,
-        user: {
-            id: req.user._id,
-            name: req.user.name,
-            email: req.user.email
-        }
-    })
-}
-
 module.exports = {
     httpRegisterUser,
     httpMailForResendOTP,
     httpConfirmUser,
     httpLoginUser,
-    httpUnlockAccount,
-    httpMailForResendUnlockOTP,
     httpMailForPasswordReset,
     httpValidateOTPForPasswordReset,
     httpResetUserPassword,
-    httpLogoutUser,
+    httpRegisterRider,
+    httpRegisterRiderDocs,
+    httpMailForResendUnlockOTP,
+    httpUnlockAccount,
     httpGoogleCallback,
+    httpLogoutUser,
 };

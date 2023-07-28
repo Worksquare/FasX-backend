@@ -3,18 +3,27 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-    name: { type: String, trim: true, required: true },
-    email: { type: String, unique: true },
-    password: { type: String },
+    // User details
     avatar: { type: String, required: true },
+    firstName: { type: String, trim: true, required: true },
+    surName: { type: String, trim: true, required: true },
+    email: { type: String, unique: true },
+    address: { type: String },
+    city: { type: String },
+    phoneNumber: { type: String, unique: true },
+    password: { type: String },
     isConfirmed: { type: Boolean, default: false },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
-    isLocked: { type: Boolean, default: false },
+    role: { type: String, enum: ['user', 'rider'], default: 'user' },
+
+    // Security Values
+    isLocked: { type: Boolean, default: false }, 
     loginAttempts: { type: Number, default: 0 },
     OTPStore: { type: String },
     otpTracker: { type: Boolean, default: false },
-    isDeliveryPartner: { type: Boolean, default: false },
+
+    // OAuth Values
     googleId: { type: String },
+    facebookId: { type: String },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

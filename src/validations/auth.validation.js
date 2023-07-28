@@ -1,10 +1,23 @@
 const { z } = require('zod');
 const UserModel = require('../models/user.model')
+const DeliveryPartnerModel = require('../models/deliveryPartner.model');
 
 const validateCreateUserObject = z.object({
-  name: z.string()
-    .nonempty('Name is required')
-    .max(50, 'Name must not exceed 50 characters'),
+  firstnName: z.string()
+    .nonempty('First name is required')
+    .max(50, 'First name must not exceed 50 characters'),
+  
+  surName: z.string()
+    .nonempty('Surname is required')
+    .max(50, 'Surname must not exceed 50 characters'),
+  
+  address: z.string()
+    .nonempty('Address is required')
+    .max(100, 'Address must not exceed 100 characters'),
+  
+  city: z.string()
+    .nonempty('City is required')
+    .max(50, 'City must not exceed 50 characters'),
   
   email: z.string()
     .nonempty('Email address is required')
@@ -17,11 +30,27 @@ const validateCreateUserObject = z.object({
       message: 'Email address already exist',
     }),
   
+  phoneNumber: z.number()
+    .refine(value => !isNaN(value), {
+      message: 'Phone number must be a valid number',
+    })
+    .refine((value) => value > 0, { message: "Phone number is required" })
+    .refine(async (value) => {
+      const user = await UserModel.findOne({ phoneNumber: value });
+      return !user;
+    }, {
+      message: 'Phone number already exist',
+    }),
+  
   password: z.string()
     .nonempty('Password is required')
     .min(8, 'Password must be at least 8 characters long')
   
 });
+
+const validateCreateRiderObject = z.object({
+  
+})
 
 const validateLoginCredentials = z.object({
   email: z.string()
@@ -33,7 +62,11 @@ const validateLoginCredentials = z.object({
     .min(8, 'Password must be at least 8 characters long')
 });
 
-const validatePasswordChange = z.object({  
+const validatePasswordChange = z.object({
+  email: z.string()
+    .nonempty('Email address is required')
+    .email('Invalid email address'),
+  
   newPassword: z.string()
     .nonempty('Password is required')
     .min(8, 'Password must be at least 8 characters long'),
@@ -46,8 +79,9 @@ const validateEmailAddress = z.object({
 });
 
 module.exports = {
-    validateCreateUserObject,
-    validateLoginCredentials,
-    validatePasswordChange,
-    validateEmailAddress
+  validateCreateUserObject,
+  validateCreateRiderObject,
+  validateLoginCredentials,
+  validatePasswordChange,
+  validateEmailAddress
 }

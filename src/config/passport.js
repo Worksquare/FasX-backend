@@ -1,6 +1,7 @@
 const passport = require('passport');
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+// const { Strategy: FacebookStrategy } = require('passport-facebook');
 require('dotenv').config();
 
 const UserModel = require('../models/user.model');
@@ -33,29 +34,34 @@ const setupPassport = () => {
                 clientID: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
                 clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
                 callbackURL: `${BASE_URL}/v1/auth/google/callback`,
+                passReqToCallback: true,
             },
-            async (accessToken, refreshToken, profile, done) => {
+            async (req, accessToken, refreshToken, profile, done) => {
                 try {
-                    let user = await UserModel.findOne({ googleId: profile.id });
-                    if (user) {
-                        return done(null, user);
-                    }
-                    const newUser = {
-                        googleId: profile.id,
-                        name: profile.displayName,
-                        isConfirmed: profile._json.email_verified,
-                        email: profile._json.email,
-                        avatar: profile._json.picture,
-                        lastLogin: new Date()
-                    };
-                    user = await UserModel.create(newUser);
-                    return done(null, user);
+                    return done(null, profile);
                 } catch (error) {
                     return done(error);
                 }
             }
         )
     );
+
+    // passport.use(
+    //     new FacebookStrategy(
+    //         {
+    //             clientID: process.env.FACEBOOK_OAUTH_CLIENT_ID || '',
+    //             clientSecret: process.env.FACEBOOK_OAUTH_CLIENT_SECRET || '',
+    //             callbackURL: `${BASE_URL}/v1/oauth2/redirect/facebook`,
+    //         },
+    //         async (accessToken, refreshToken, profile, done) => {
+    //             try {
+    //                 return done(null, user);
+    //             } catch (error) {
+    //                 return done(error);
+    //             }
+    //         }
+    //     )
+    // );
 }
 
 module.exports = setupPassport;

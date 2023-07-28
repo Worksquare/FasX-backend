@@ -46,19 +46,18 @@ async function deleteOTP(email) {
 
 function generateOTP() {
     const digits = '0123456789';
-    const lowerCaseAlphabets = 'abcdefghijklmnopqrstuvwxyz';
-    const upperCaseAlphabets = lowerCaseAlphabets.toUpperCase();
-    const specialChars = '#!&@';
-
-    const allowedChars = digits + lowerCaseAlphabets + upperCaseAlphabets + specialChars;
 
     let OTP = '';
-    for (let i = 0; i < 10; i++) {
-        const charIndex = crypto.randomInt(0, allowedChars.length);
-        OTP += allowedChars[charIndex];
+    for (let i = 0; i < 4; i++) {
+        const charIndex = crypto.randomInt(0, digits.length);
+        OTP += digits[charIndex] + '-';
     }
 
-    return OTP;
+    OTP = OTP.slice(0, -1);
+
+    return OTP
 }
+
+generateOTP()
 
 module.exports = { storeOTP, verifyOTP, deleteOTP, generateOTP };
