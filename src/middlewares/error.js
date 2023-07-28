@@ -6,7 +6,7 @@ function handleError(err, req, res, next) {
 
     // Zod validation error
     if (err.name === 'ZodError') {
-        const message = err.issues[0]?.message || 'Validation error';
+        const message = err.errors[0]?.message || 'Validation error';
         error = new ErrorResponse(message, 400);
     }
 

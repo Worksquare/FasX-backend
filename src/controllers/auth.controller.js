@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const BlacklistToken = require('../models/blacklistToken.model');
+const ErrorResponse = require('../utils/error.response');
 const {
     validateCreateUserObject,
     validateCreateRiderObject,
@@ -20,16 +21,16 @@ const {
  */
 async function httpRegisterUser(req, res, next) {
     try {
-        const { firstName, surName, email, address, city, phoneNumer, password } = req.body;
+        const { firstName, surName, email, address, city, phoneNumber, password } = req.body;
         const userData = await validateCreateUserObject
-            .parseAsync({ firstName, surName, email, address, city, phoneNumer, password });
+            .parseAsync({ firstName, surName, email, address, city, phoneNumber, password });
 
         const result = await authService.registerUser(userData);
 
         res.status(201).json({
+            status: true,
             message: 'User registered successfully',
-            accessToken: result.accessToken,
-            user: result.user
+            accessToken: result
         });
     } catch (error) {
         next(error);
@@ -52,7 +53,10 @@ async function httpMailForResendOTP(req, res, next) {
 
         const result = await authService.mailForResendOTP(id);
 
-        res.status(200).json(result);
+        res.status(200).json({
+            status: true,
+            message: result
+        });
     } catch (error) {
         next(error);
     }
@@ -75,7 +79,10 @@ async function httpConfirmUser(req, res, next) {
 
         const result = await authService.confirmUserRegistration(id, OTP);
 
-        res.status(200).json(result);
+        res.status(200).json({
+            status: true,
+            message: result
+        });
     } catch (error) {
         next(error);
     }
@@ -100,9 +107,9 @@ async function httpLoginUser(req, res, next) {
         const result = await authService.loginUser(userData);
 
         res.json({
+            status: true,
             message: 'User login successfully',
             accessToken: result.accessToken,
-            user: result.user
         });
     } catch (error) {
         next(error);
@@ -127,7 +134,10 @@ async function httpMailForPasswordReset(req, res, next) {
 
         const result = await authService.mailForPasswordReset(userData);
 
-        res.status(200).json(result);
+        res.status(200).json({
+            status: true,
+            message: result
+        });
     } catch (error) {
         next(error);
     }
@@ -135,7 +145,7 @@ async function httpMailForPasswordReset(req, res, next) {
 
 /**
  * @desc Validate OTP for password reset
- * @route PUT /v1/auth/validate_token?token=value&email=value
+ * @route PUT /v1/auth/validate_otp
  * @access Private
  *
  * @param {Object} req - The request object.
@@ -145,19 +155,20 @@ async function httpMailForPasswordReset(req, res, next) {
  */
 async function httpValidateOTPForPasswordReset(req, res, next) {
     try {
-        const { token, email } = req.query;
+        const { id } = req.user;
+        const { OTP } = req.body;
 
-        console.log('req.query', req.query)
+        const result = await authService.validateOTPForPasswordReset(id, OTP);
 
-        await authService.validateOTPForPasswordReset(token, email);
-
-        // I will have to resend the user to where they can change their password. 
-        // TODO, I will change this route to the frontend route.
-        res.status(301).redirect('/v1/auth/reset_password')
+        res.status(200).json({
+            status: true,
+            message: result
+        });
     } catch (error) {
         next(error);
     }
 }
+
 
 /**
  * @desc Reset user password
@@ -171,13 +182,17 @@ async function httpValidateOTPForPasswordReset(req, res, next) {
  */
 async function httpResetUserPassword(req, res, next) {
     try {
-        const { email, newPassword } = req.body;
+        const { id } = req.user;
+        const { newPassword } = req.body;
 
-        const userData = validatePasswordChange.parse({ email, newPassword });
+        const userData = validatePasswordChange.parse({ newPassword });
 
         const result = await authService.resetUserPassword(id, userData);
 
-        res.status(200).json(result);
+        res.status(200).json({
+            status: true,
+            message: result
+        });
     } catch (error) {
         next(error);
     }
@@ -202,10 +217,10 @@ async function httpRegisterRider(req, res, next) {
         const result = await authService.registerRider(riderData);
 
         res.status(201).json({
+            status: true,
             message: 'Rider registered successfully',
-            accessToken: result.accessToken,
-            user: result.user
-        });;
+            accessToken: result
+        })
     } catch (error) {
         next(error);
     }
@@ -232,10 +247,10 @@ async function httpRegisterRiderDocs(req, res, next) {
         const result = await authService.registerRiderDocs(id, riderData);
 
         res.status(201).json({
-            message: 'Rider registered successfully',
-            accessToken: result.accessToken,
-            user: result.user,
-        });
+            status: true,
+            message: 'Rider Document registered successfully',
+            accessToken: result
+        })
     } catch (error) {
         next(error);
     }
@@ -257,7 +272,10 @@ async function httpMailForResendUnlockOTP(req, res, next) {
 
         const result = await authService.mailForResendUnlockOTP(email);
 
-        res.status(200).json(result);
+        res.status(200).json({
+            status: true,
+            message: result
+        });
     } catch (error) {
         next(error);
     }
@@ -279,7 +297,10 @@ async function httpUnlockAccount(req, res, next) {
 
         const result = await authService.unlockAccount(email, OTP);
 
-        res.status(200).json(result);
+        res.status(200).json({
+            status: true,
+            message: result
+        });
     } catch (error) {
         next(error);
     }
@@ -297,9 +318,13 @@ async function httpUnlockAccount(req, res, next) {
 async function httpGoogleCallback(req, res, next) {
     try {
         const profile = req.user;
-        const { status, data } = await authService.handleGoogleCallback(profile);
+        const { statusCode, data } = await authService.handleGoogleCallback(profile);
 
-        res.status(status).json(data);
+        res.status(statusCode).json({
+            status: data.status,
+            message: data.message,
+            accessToken: data.accessToken
+        });
     } catch (error) {
         next(error);
     }

@@ -1,9 +1,8 @@
 const { z } = require('zod');
-const UserModel = require('../models/user.model')
-const DeliveryPartnerModel = require('../models/deliveryPartner.model');
+const UserModel = require('../models/user.model');
 
 const validateCreateUserObject = z.object({
-  firstnName: z.string()
+  firstName: z.string()
     .nonempty('First name is required')
     .max(50, 'First name must not exceed 50 characters'),
   
@@ -30,13 +29,13 @@ const validateCreateUserObject = z.object({
       message: 'Email address already exist',
     }),
   
-  phoneNumber: z.number()
-    .refine(value => !isNaN(value), {
-      message: 'Phone number must be a valid number',
-    })
-    .refine((value) => value > 0, { message: "Phone number is required" })
+  phoneNumber: z.string()
+    .nonempty('Phone number is required')
+    .min(3, 'Phone number must be at least 3 characters long')
+    .max(15, 'Phone number must not exceed 15 characters')
     .refine(async (value) => {
-      const user = await UserModel.findOne({ phoneNumber: value });
+      const trimmedNumber= value.trim()
+      const user = await UserModel.findOne({ phoneNumber: trimmedNumber });
       return !user;
     }, {
       message: 'Phone number already exist',

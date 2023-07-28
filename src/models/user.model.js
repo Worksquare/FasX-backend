@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     address: { type: String },
     city: { type: String },
-    phoneNumber: { type: String, unique: true },
+    phoneNumber: { type: String, trim: true, unique: true },
     password: { type: String },
     isConfirmed: { type: Boolean, default: false },
     role: { type: String, enum: ['user', 'rider'], default: 'user' },

@@ -21,7 +21,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/RegisterUserResponse'
+ *               $ref: '#/components/schemas/AuthResponse'
  *       '400':
  *         $ref: '#/components/responses/ErrorResponse'
  *
@@ -34,7 +34,7 @@
  *       - BearerAuth: []
  *     responses:
  *       '200':
- *         description: Mail sent successfully
+ *         $ref: '#/components/responses/SuccessResponse'
  *       '400':
  *         $ref: '#/components/responses/ErrorResponse'
  *       '404':
@@ -55,11 +55,7 @@
  *             $ref: '#/components/schemas/ConfirmUserRequest'
  *     responses:
  *       '200':
- *         description: OTP verified successfully and user is confirmed
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ConfirmUserResponse'
+ *         $ref: '#/components/responses/SuccessResponse'
  *       '400':
  *         $ref: '#/components/responses/ErrorResponse'
  *       '404':
@@ -82,10 +78,113 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LoginUserResponse'
+ *               $ref: '#/components/schemas/AuthResponse'
  *       '400':
  *         $ref: '#/components/responses/ErrorResponse'
  *       '404':
+ *         $ref: '#/components/responses/ErrorResponse'
+ *
+ * /v1/auth/forgot_password:
+ *   post:
+ *     summary: Send mail for password reset
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordRequest'
+ *     responses:
+ *       '200':
+ *         $ref: '#/components/responses/SuccessResponse'
+ *       '400':
+ *         $ref: '#/components/responses/ErrorResponse'
+ *       '404':
+ *         $ref: '#/components/responses/ErrorResponse'
+ *
+ * /v1/auth/validate_otp:
+ *   put:
+ *     summary: Validate OTP for password reset
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ValidateOTPRequest'
+ *     responses:
+ *       '200':
+ *         $ref: '#/components/responses/SuccessResponse'
+ *       '400':
+ *         $ref: '#/components/responses/ErrorResponse'
+ *       '404':
+ *         $ref: '#/components/responses/ErrorResponse'
+ *
+ * /v1/auth/reset_password:
+ *   put:
+ *     summary: Reset user password
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ResetPasswordRequest'
+ *     responses:
+ *       '200':
+ *         $ref: '#/components/responses/SuccessResponse'
+ *       '400':
+ *         $ref: '#/components/responses/ErrorResponse'
+ *       '404':
+ *         $ref: '#/components/responses/ErrorResponse'
+ * 
+ * /v1/auth/register/rider:
+ *   post:
+ *     summary: Register a new rider
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterUserRequest'
+ *     responses:
+ *       '201':
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RegisterUserResponse'
+ *       '400':
+ *         $ref: '#/components/responses/ErrorResponse'
+ * 
+ * /v1/auth/register/rider_docs:
+ *   post:
+ *     summary: Register a rider document
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterUserRequest'
+ *     responses:
+ *       '201':
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RegisterUserResponse'
+ *       '400':
  *         $ref: '#/components/responses/ErrorResponse'
  *
  * /v1/auth/unlock_account:
@@ -125,68 +224,7 @@
  *         $ref: '#/components/responses/ErrorResponse'
  *       '404':
  *         $ref: '#/components/responses/ErrorResponse'
- *
- * /v1/auth/forgot_password:
- *   post:
- *     summary: Send mail for password reset
- *     tags:
- *       - Authentication
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ForgotPasswordRequest'
- *     responses:
- *       '200':
- *         description: Mail sent successfully
- *       '400':
- *         $ref: '#/components/responses/ErrorResponse'
- *       '404':
- *         $ref: '#/components/responses/ErrorResponse'
- *
- * /v1/auth/validate_otp:
- *   put:
- *     summary: Validate OTP for password reset
- *     tags:
- *       - Authentication
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ValidateOTPRequest'
- *     responses:
- *       '200':
- *         description: OTP verified successfully
- *       '400':
- *         $ref: '#/components/responses/ErrorResponse'
- *       '404':
- *         $ref: '#/components/responses/ErrorResponse'
- *
- * /v1/auth/reset_password:
- *   put:
- *     summary: Reset user password
- *     tags:
- *       - Authentication
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ResetPasswordRequest'
- *     responses:
- *       '200':
- *         description: Password reset successfully
- *       '400':
- *         $ref: '#/components/responses/ErrorResponse'
- *       '404':
- *         $ref: '#/components/responses/ErrorResponse'
- *
+ * 
  * /v1/auth/logout:
  *   get:
  *     summary: Logout user
@@ -203,23 +241,31 @@
  *     RegisterUserRequest:
  *       type: object
  *       properties:
- *         name:
+ *         firstName:
+ *           type: string
+ *         surName:
  *           type: string
  *         email:
  *           type: string
  *           format: email
+ *         address:
+ *           type: string
+ *         city:
+ *           type: string
+ *         phoneNumber:
+ *           type: string
  *         password:
  *           type: string
  * 
- *     RegisterUserResponse:
+ *     AuthResponse:
  *       type: object
  *       properties:
+ *         status:
+ *           type: boolean
  *         message:
  *           type: string
  *         accessToken:
  *           type: string
- *         user:
- *           $ref: '#/components/schemas/UserData'
  * 
  *     ConfirmUserRequest:
  *       type: object
@@ -289,17 +335,6 @@
  *         newPassword:
  *           type: string
  * 
- *     UserData:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *         name:
- *           type: string
- *         email:
- *           type: string
- *           format: email
- * 
  *   responses:
  *     ErrorResponse:
  *       description: Error response
@@ -308,9 +343,20 @@
  *           schema:
  *             type: object
  *             properties:
- *               success:
+ *               status:
  *                  type: boolean
  *                  default: false
+ *               message:
+ *                  type: string
+ *     SuccessResponse:
+ *       description: Success response
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                  type: boolean
  *               message:
  *                  type: string
  */

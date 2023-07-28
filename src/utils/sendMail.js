@@ -24,8 +24,7 @@ const sendMail = async (otp, email, options, name) => {
 				name: `${name}`,
 				intro: `<h2>Account Created!</h2><br>
                 <p>Congratulations! Your account has been successfully created.</p>
-                <p>Here is your OTP: <b>${otp}</b></p>
-                <p>Click this link to <a href="${url}">Verify Account</a>.</p>`,
+                <p>Here is your OTP: <b>${otp}</b></p>`,
 				outro: `<p>Please, if you did not request this email, ignore it.</p>`,
 			}
 		}

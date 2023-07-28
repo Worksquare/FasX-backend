@@ -17,17 +17,13 @@ async function registerUser(userData) {
 
         const otp = generateOTP();
         await storeOTP(savedUser.email, otp);
-        await sendMail(otp, savedUser.email, 'register', savedUser.name);
+
+        const name = `${savedUser.firstName} ${savedUser.surName}`;
+        await sendMail(otp, savedUser.email, 'register', name);
+
         const accessToken = generateToken(savedUser._id, 'confirm');
 
-        return {
-            accessToken,
-            user: {
-                id: savedUser._id,
-                name: savedUser.name,
-                email: savedUser.email
-            }
-        };
+        return accessToken
     } catch (error) {
         throw new ErrorResponse(error.message, 500);
     }
@@ -44,9 +40,12 @@ async function mailForResendOTP(userId) {
             
             const otp = generateOTP();
             await storeOTP(user.email, otp);
-            await sendMail(otp, user.email, 'register', user.name);
 
-            return { message: 'Mail sent successfully' };
+            const name = `${savedUser.firstName} ${savedUser.surName}`
+            await sendMail(otp, user.email, 'register', name);
+
+            let message = 'Mail sent successfully'
+            return message;
         } else {
             throw new ErrorResponse('User already confirmed', 400);
         }
@@ -58,7 +57,7 @@ async function mailForResendOTP(userId) {
 // Confirm user's mail with OTP
 async function confirmUserRegistration(userId, OTP) {
     try {
-        const user = await UserModel.findById(userId).select('-password -confirmPassword');
+        const user = await UserModel.findById(userId).select('-password');
         if (!user) throw new ErrorResponse('User not found', 404);
 
         if (user.isConfirmed) throw new ErrorResponse('User already confirmed', 400);
@@ -67,16 +66,10 @@ async function confirmUserRegistration(userId, OTP) {
         if (storedOTP) {
             user.isConfirmed = true;
             await deleteOTP(user.email);
-            const updatedUser = await user.save();
+            await user.save();
 
-            return {
-                message: 'OTP verified successfully and User is confirmed',
-                user: {
-                    id: updatedUser._id,
-                    name: updatedUser.name,
-                    email: updatedUser.email,
-                }
-            };
+            const message = 'OTP verified successfully and User is confirmed'
+            return message;
         } else {
             throw new ErrorResponse('Invalid OTP', 400);
         }
@@ -120,14 +113,7 @@ async function loginUser(userData) {
         user.lastLogin = new Date();
         await user.save();
 
-        return {
-            accessToken,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email
-            }
-        };
+        return accessToken;
     } catch (error) {
         throw new ErrorResponse(error.message, 500);
     }
@@ -144,7 +130,8 @@ async function mailForPasswordReset(userData) {
             await storeOTP(user.email, otp);
             await sendMail(otp, user.email, 'forgot password', user.name);
 
-            return { message: 'Mail sent sucessesfully' }
+            let message = 'Mail sent sucessesfully';
+            return message;
         } else {
             throw new ErrorResponse('Email not confirmed', 400);
         }
@@ -154,13 +141,19 @@ async function mailForPasswordReset(userData) {
 }
 
 // Validate OTP for password reset
-async function validateOTPForPasswordReset(token, email) {
+async function validateOTPForPasswordReset(userId, OTP) {
     try {
-        const storedOTP = await verifyOTP(token, email);
+        const user = await UserModel.findById(userId).select('-password');
+        if (!user) throw new ErrorResponse('User not found', 404);
+
+        const storedOTP = await verifyOTP(OTP, user.email);
 
         if (storedOTP) {
             user.otpTracker = true;
             await user.save();
+
+            let message = 'OTP verified successfully.';
+            return message;
         } else {
             throw new ErrorResponse('Invalid OTP', 400);
         }
@@ -170,9 +163,9 @@ async function validateOTPForPasswordReset(token, email) {
 }
 
 // Reset user password
-async function resetUserPassword(userData) {
+async function resetUserPassword(userId, userData) {
     try {
-        let user = await UserModel.findOne({ email: userData.email });
+        let user = await UserModel.findById(userId);
         if (!user) throw new ErrorResponse('User not found', 404);
         if (!user.otpTracker) throw new ErrorResponse('OTP not Verified', 400);
 
@@ -180,7 +173,8 @@ async function resetUserPassword(userData) {
         user.otpTracker = false;
         await user.save();
 
-        return { message: 'Password reset successfully, kindly login' };
+        const message = 'Password reset successfully, kindly login';
+        return message;
     } catch (error) {
         throw new ErrorResponse(error.message, 500);
     }
@@ -191,18 +185,11 @@ async function registerRider(riderData) {
     try {
         const avatar = generateAvatar(riderData.email);
         const rider = { ...userData, avatar };
-        await UserModel.create(rider);
+        const user = await UserModel.create(rider);
 
         const accessToken = generateToken(user._id, 'confirm');
 
-        return {
-            accessToken,
-            user: {
-                id: rider._id,
-                name: rider.name,
-                email: rider.email
-            }
-        };
+        return accessToken;
     } catch (error) {
         throw new ErrorResponse(error.message, 500);
     }
@@ -220,18 +207,13 @@ async function registerRiderDocs(userId, riderData) {
 
         const otp = generateOTP();
         await storeOTP(user.email, otp);
-        await sendMail(otp, user.email, 'register', user.name);
+
+        const name = `${user.firstName} ${user.surName}`
+        await sendMail(otp, user.email, 'register', name);
 
         const accessToken = generateToken(user._id, 'confirm');
 
-        return {
-            accessToken,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email
-            }
-        };
+        return accessToken;
     } catch (error) {
         throw new ErrorResponse(error.message, 500);
     }
@@ -252,7 +234,8 @@ async function mailForResendUnlockOTP(email) {
 
             await sendMail(otp, user.email, 'login attempts', user.name);
 
-            return { message: 'Mail sent successfully.' };
+            const message = 'Mail sent successfully.';
+            return message;
         } else {
             throw new ErrorResponse('Account not locked', 400);
         }
@@ -276,7 +259,8 @@ async function unlockAccount(email, OTP) {
                 user.isLocked = false;
                 await user.save();
 
-                return { message: 'Account successfully unlocked.' };
+                let message = 'Account successfully unlocked.';
+                return message;
             } else {
                 throw new ErrorResponse('Invalid OTP', 400);
             }
@@ -287,7 +271,6 @@ async function unlockAccount(email, OTP) {
         throw new ErrorResponse(error.message, 500);
     }
 }
-
 
 // Google callback route to give user access token
 async function handleGoogleCallback(profile) {
@@ -310,32 +293,25 @@ async function handleGoogleCallback(profile) {
             const otp = generateOTP();
             await storeOTP(user.email, otp);
             await sendMail(otp, user.email, 'register', user.name);
-            const accessToken = generateToken(user._id, 'confirm');
+            const token = generateToken(user._id, 'confirm');
 
             return {
-                status: 201,
+                statusCode: 201,
                 data: {
-                    accessToken,
-                    user: {
-                        id: user._id,
-                        name: user.name,
-                        email: user.email
-                    }
+                    status: true,
+                    message: 'User registered successfully with Google',
+                    accessToken: token,
                 }
             };
         }
 
         return {
-            status: 200,
+            statusCode: 200,
             data: {
+                status: true,
                 message: 'Google Access granted',
                 accessToken: token,
-                user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email
-                }
-            }
+            }  
         };
     } catch (error) {
         throw new ErrorResponse(error.message, 500);
