@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const UserModel = require('../models/user.model');
+const DeliveryPartnerModel = require('../models/deliveryPartner.model');
 
 const validateCreateUserObject = z.object({
   firstName: z.string()
@@ -48,6 +49,23 @@ const validateCreateUserObject = z.object({
 });
 
 const validateCreateRiderObject = z.object({
+  vehicleType: z.string()
+    .nonempty('Vehicle Type is required'),
+  
+  color: z.string()
+    .nonempty('Color is required'),
+  
+  model: z.string()
+    .nonempty('Model is required'),
+
+  chasisNumber: z.string()
+    .nonempty('Chasis number is required'),
+  
+  plateNumber: z.string()
+    .nonempty('Plate number is required'),
+  
+  ownedSince: z.string()
+    .nonempty('Data is required'),
   
 })
 
@@ -62,10 +80,6 @@ const validateLoginCredentials = z.object({
 });
 
 const validatePasswordChange = z.object({
-  email: z.string()
-    .nonempty('Email address is required')
-    .email('Invalid email address'),
-  
   newPassword: z.string()
     .nonempty('Password is required')
     .min(8, 'Password must be at least 8 characters long'),

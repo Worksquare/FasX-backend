@@ -97,7 +97,11 @@
  *             $ref: '#/components/schemas/ForgotPasswordRequest'
  *     responses:
  *       '200':
- *         $ref: '#/components/responses/SuccessResponse'
+ *         description: Mail for password reset
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
  *       '400':
  *         $ref: '#/components/responses/ErrorResponse'
  *       '404':
@@ -273,13 +277,6 @@
  *         OTP:
  *           type: string
  * 
- *     ConfirmUserResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *         user:
- *           $ref: '#/components/schemas/UserData'
  * 
  *     LoginUserRequest:
  *       type: object
@@ -289,16 +286,6 @@
  *           format: email
  *         password:
  *           type: string
- * 
- *     LoginUserResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *         accessToken:
- *           type: string
- *         user:
- *           $ref: '#/components/schemas/UserData'
  * 
  *     UnlockAccountRequest:
  *       type: object

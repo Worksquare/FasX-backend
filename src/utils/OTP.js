@@ -48,9 +48,9 @@ function generateOTP() {
     const digits = '0123456789';
 
     let OTP = '';
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
         const charIndex = crypto.randomInt(0, digits.length);
-        OTP += digits[charIndex] + '-';
+        OTP += digits[charIndex];
     }
 
     OTP = OTP.slice(0, -1);

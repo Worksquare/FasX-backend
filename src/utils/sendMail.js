@@ -29,14 +29,15 @@ const sendMail = async (otp, email, options, name) => {
 			}
 		}
 	} else if (options === 'forgot password') {
-		const resetLink = `${BASE_URL}/v1/auth/validate_otp?token=${otp}&email=${email}`;
+		const url = `${BASE_URL}/v1/auth/validate_otp`;
 
 		response = {
 			body: {
 				name: `${name}`,
 				intro: `<h2>Reset Password!</h2><br>
                 <p>We received a request to reset your password.</p>
-                <p>Click the link to reset your password: <a href="${resetLink}">Click here</a></p>`,
+                <p>Here is your OTP: <b>${otp}</b></p>
+                <p>Copy the OTP and click <a href="${url}">Verify OTP</a>.</p>`,
 				outro: `<p>Please, if you did not request this email, ignore it.</p>`,
 			}
 		}

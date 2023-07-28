@@ -109,7 +109,7 @@ async function httpLoginUser(req, res, next) {
         res.json({
             status: true,
             message: 'User login successfully',
-            accessToken: result.accessToken,
+            accessToken: result,
         });
     } catch (error) {
         next(error);
@@ -134,9 +134,10 @@ async function httpMailForPasswordReset(req, res, next) {
 
         const result = await authService.mailForPasswordReset(userData);
 
-        res.status(200).json({
+        res.json({
             status: true,
-            message: result
+            message: 'Mail sent successfully',
+            accessToken: result,
         });
     } catch (error) {
         next(error);
@@ -239,10 +240,10 @@ async function httpRegisterRider(req, res, next) {
 async function httpRegisterRiderDocs(req, res, next) {
     try {
         const { id } = req.user;
-        const { typeVehicle, color, model, chasisNumber, plateNumber, ownedSince } = req.body;
+        const { vehicleType, color, model, chasisNumber, plateNumber, ownedSince } = req.body;
 
         const riderData = await validateCreateRiderObject
-            .parseAsync({ typeVehicle, color, model, chasisNumber, plateNumber, ownedSince });
+            .parseAsync({ vehicleType, color, model, chasisNumber, plateNumber, ownedSince });
 
         const result = await authService.registerRiderDocs(id, riderData);
 

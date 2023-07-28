@@ -41,7 +41,7 @@ async function mailForResendOTP(userId) {
             const otp = generateOTP();
             await storeOTP(user.email, otp);
 
-            const name = `${savedUser.firstName} ${savedUser.surName}`
+            const name = `${user.firstName} ${user.surName}`;
             await sendMail(otp, user.email, 'register', name);
 
             let message = 'Mail sent successfully'
@@ -97,7 +97,8 @@ async function loginUser(userData) {
                 user.OTPStore = hashOTP;
                 await user.save();
 
-                await sendMail(otp, user.email, 'login attempts', user.name);
+                const name = `${user.firstName} ${user.surName}`;
+                await sendMail(otp, user.email, 'login attempts', name);
 
                 throw new ErrorResponse('Account locked due to multiple login attempts. Check your email for unlock instructions.', 400);
             }
@@ -128,10 +129,13 @@ async function mailForPasswordReset(userData) {
         if (user.isConfirmed) {
             const otp = generateOTP();
             await storeOTP(user.email, otp);
-            await sendMail(otp, user.email, 'forgot password', user.name);
 
-            let message = 'Mail sent sucessesfully';
-            return message;
+            const name = `${user.firstName} ${user.surName}`;
+            await sendMail(otp, user.email, 'forgot password', name);
+
+            const accessToken = generateToken(user._id, 'reset');
+
+            return accessToken;
         } else {
             throw new ErrorResponse('Email not confirmed', 400);
         }
