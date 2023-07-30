@@ -1,0 +1,216 @@
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+      example:
+        id: 5ebac534954b54139806c112
+        email: fake@example.com
+        name: fake name
+        role: user
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        partnerId:
+          type: string
+        deliveryId:
+          type: string
+        pickupId:
+          type: string
+      example:
+        id: 5ebac534954b54139806c112
+        productId: 5ebac534954b54139806c112
+        partnerId: 5ebac534954b54139806c112
+        deliveryId: 5ebac534954b54139806c112
+        pickupId: 5ebac534954b54139806c112
+
+    PickUpAddress:
+      type: object
+      properties:
+        id:
+          type: string
+        flatNumber:
+          type: string
+        houseNumber:
+          type: string
+        street:
+          type: string
+        town:
+          type: string
+        city:
+          type: string
+        lga:
+          type: string
+        state:
+          type: string
+      example:
+        id: 5ebac534954b54139806c112
+        flatNumber: 12B
+        houseNumber: 45
+        street: Burdillion view estate
+        town: Ikoyi
+        city: Lagos Island
+        lga: Lagos Island
+        state: Lagos state
+
+    DeliveryAddress:
+      type: object
+      properties:
+        id:
+          type: string
+        flatNumber:
+          type: string
+        houseNumber:
+          type: string
+        street:
+          type: string
+        town:
+          type: string
+        city:
+          type: string
+        lga:
+          type: string
+        state:
+          type: string
+        receiverPhoneNumber:
+          type: array
+        receiverName:
+          type: string
+      example:
+        id: 5ebac534954b54139806c112
+        flatNumber: 12B
+        houseNumber: 45
+        street: Burdillion view estate
+        town: Ikoyi
+        city: Lagos Island
+        lga: Lagos Island
+        state: Lagos state
+        receiverPhoneNumber: ['098887654321', '1234567890']
+        receiverName: Mr Tinunu Bola
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        item:
+          type: string
+        color:
+          type: string
+        vehicleType:
+          type: string
+          enum: [car, boat, lorry, bike, bicycle]
+        description:
+          type: string
+        weightOfItem:
+          type: string
+        numberOfItem:
+          type: number
+        insurance:
+          type: boolean
+        productForm:
+          type: string
+          enum: [new, old, used]
+        mediaIds:
+          type: string
+        productUsefulness:
+          type: string
+      example:
+        id: 5ebac534954b54139806c112
+        item: Samsung A03s
+        color: red
+        vehicleType: lorry
+        description: this is a good phone ooo
+        weightOfItem: 5kg
+        numberOfItem: 12
+        insurance: false
+        productForm: new
+        mediaIds: 5ebac534954b54139806c112
+        productusefulness: this is used for communication
+
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+        expires:
+          type: string
+          format: date-time
+      example:
+        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
+        expires: 2020-05-12T16:18:04.793Z
+
+    AuthTokens:
+      type: object
+      properties:
+        access:
+          $ref: '#/components/schemas/Token'
+        refresh:
+          $ref: '#/components/schemas/Token'
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: number
+        message:
+          type: string
+
+  responses:
+    DuplicateEmail:
+      description: Email already taken
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 400
+            message: Email already taken
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 401
+            message: Please authenticate
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 403
+            message: Forbidden
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 404
+            message: Not found
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

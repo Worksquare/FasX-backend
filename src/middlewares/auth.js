@@ -1,84 +1,33 @@
-const ErrorResponse = require('../utils/error.response');
-const { decodeToken } = require('../utils/token');
 const passport = require('passport');
-const BlacklistToken = require('../models/blacklistToken.model');
+const httpStatus = require('http-status');
+const ApiError = require('../utils/ApiError');
+const { roleRights } = require('../config/roles');
 
-/**
- * @desc Middleware to authenticate user's token for access to resource for a longer time.
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The next function or an error.
- */
-const authenticate = (req, res, next) => {
-  passport.authenticate('jwt', { session: false }, async (err, user) => {
-    if (err || !user) return next(new ErrorResponse('Unauthorized', 401));
+const verifyCallback = (req, resolve, reject, requiredRights) => async (err, user, info) => {
+  if (err || info || !user) {
+    return reject(new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate'));
+  }
+  req.user = user;
 
-    try {
-      const authHeader = req.header('Authorization') || req.header('authorization');
-      if (!authHeader) return next(new ErrorResponse('Unauthorized', 401));
-
-      const token = authHeader.split(' ')[1];
-      const tokenBlacklisted = await BlacklistToken.findOne({ token });
-      if (tokenBlacklisted) return next(new ErrorResponse('Unauthorized', 401));
-
-      const { _id, role } = user;
-
-      req.user = { id: _id, role };
-      
-      next();
-    } catch (error) {
-      return next(error);
+  if (requiredRights.length) {
+    const userRights = roleRights.get(user.role);
+    const hasRequiredRights = requiredRights.every((requiredRight) => userRights.includes(requiredRight));
+    if (!hasRequiredRights && req.params.userId !== user.id) {
+      return reject(new ApiError(httpStatus.FORBIDDEN, 'Forbidden'));
     }
-  })(req, res, next);
-}
+  }
 
-/**
- * @desc Middleware to authenticate user's token for access to resource for a short time.
- *
- * @param {string} tokenType - The type of token to authenticate ('confirm' or 'reset').
- * @returns {Function} - The next function or an error.
- */
-function authenticateToken(tokenType) {
-  return async (req, res, next) => {
-    try {
-      const authHeader = req.header('Authorization') || req.header('authorization');
+  resolve();
+};
 
-      // Check if Authorization header exists
-      if (!authHeader) return next(new ErrorResponse('Unauthorized', 401));
-
-      const token = authHeader && authHeader.split(' ')[1];
-
-      if (!token) return next(new ErrorResponse('Unauthorized', 401));
-
-      const userId = decodeToken(token, tokenType);
-
-      req.user = { id: userId };
-
-      next();
-    } catch (error) {
-      next(error);
-    }
+const auth =
+  (...requiredRights) =>
+  async (req, res, next) => {
+    return new Promise((resolve, reject) => {
+      passport.authenticate('jwt', { session: false }, verifyCallback(req, resolve, reject, requiredRights))(req, res, next);
+    })
+      .then(() => next())
+      .catch((err) => next(err));
   };
-}
 
-/**
- * @desc Middleware to authorize user.
- *
- * @param {Object} roles - Role of the user
- * @returns {Function} - The next function or an error.
- */
-function authorize(roles) {
-  return (req, res, next) => {
-    const userRole = req.user.role;
-
-    if (!roles.includes(userRole)) {
-      return next(new ErrorResponse('Unauthorized', 401));
-    }
-
-    next();
-  };
-}
-
-module.exports = { authenticate, authenticateToken, authorize };
+module.exports = auth;

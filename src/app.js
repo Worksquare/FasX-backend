@@ -1,46 +1,67 @@
-const cors = require('cors')
 const express = require('express');
 const helmet = require('helmet');
-const hpp = require('hpp');
+const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
-const morgan = require('morgan');
-const responseTime = require('response-time');
+const compression = require('compression');
+const cors = require('cors');
 const passport = require('passport');
-
-const apiV1 = require('./routes/api.v1');
-const handleError = require('./middlewares/error');
-const limiter = require('./config/rate.limit');
-const setupPassport = require('./config/passport');
+const httpStatus = require('http-status');
+const config = require('./config/config');
+const morgan = require('./config/morgan');
+const { jwtStrategy } = require('./config/passport');
+const { authLimiter } = require('./middlewares/rateLimiter');
+const routes = require('./routes/v1');
+const { errorConverter, errorHandler } = require('./middlewares/error');
+const ApiError = require('./utils/ApiError');
 
 const app = express();
 
-// Security configuration
-app.use(helmet()); // adds security headers
-app.use(cors()); // enables Cross-Origin Resource Sharing
-app.options('*', cors()); // cross-origin resource sharing for all routes
-app.use(mongoSanitize()); // prevent SQL injection
-app.use(hpp()); //HTTP Param Pollution
-app.use(limiter); //limit queries per 15mn
+if (config.env !== 'test') {
+  app.use(morgan.successHandler);
+  app.use(morgan.errorHandler);
+}
 
-// Enable parsing Json payload  in the request body
+// set security HTTP headers
+app.use(helmet());
+
+// parse json request body
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
-// Logs information about incoming requests and outgoing responses in the terminal
-app.use(morgan('combined'));
+// parse urlencoded request body
+app.use(express.urlencoded({ extended: true }));
 
-// Adds an X-Response-Time for indicating the server's response time in milliseconds.
-app.use(responseTime());
+// sanitize request data
+app.use(xss());
+app.use(mongoSanitize());
 
-// Passport Middleware configuration
-setupPassport()
+// gzip compression
+app.use(compression());
+
+// enable cors
+app.use(cors());
+app.options('*', cors());
+
+// jwt authentication
 app.use(passport.initialize());
+passport.use('jwt', jwtStrategy);
 
-// Routes configuration
-app.use('/v1', apiV1);
-app.use('/*', (req, res, next) => res.status(404).json({ message: 'Page not found' }));
+// limit repeated failed requests to auth endpoints
+if (config.env === 'production') {
+  app.use('/v1/auth', authLimiter);
+}
 
-// Error handling middleware
-app.use(handleError);
+// v1 api routes
+app.use('/v1', routes);
+
+// send back a 404 error for any unknown api request
+app.use((req, res, next) => {
+  next(new ApiError(httpStatus.NOT_FOUND, 'Not found'));
+});
+
+// convert error to ApiError, if needed
+app.use(errorConverter);
+
+// handle error
+app.use(errorHandler);
 
 module.exports = app;

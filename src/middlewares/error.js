@@ -1,65 +1,44 @@
-const ErrorResponse = require('../utils/error.response');
+const mongoose = require('mongoose');
+const httpStatus = require('http-status');
+const config = require('../config/config');
+const logger = require('../config/logger');
+const ApiError = require('../utils/ApiError');
 
-function handleError(err, req, res, next) {
-    let error = { ...err };
-    error.message = err.message;
+const errorConverter = (err, req, res, next) => {
+  let error = err;
+  if (!(error instanceof ApiError)) {
+    const statusCode =
+      error.statusCode || error instanceof mongoose.Error ? httpStatus.BAD_REQUEST : httpStatus.INTERNAL_SERVER_ERROR;
+    const message = error.message || httpStatus[statusCode];
+    error = new ApiError(statusCode, message, false, err.stack);
+  }
+  next(error);
+};
 
-    // Zod validation error
-    if (err.name === 'ZodError') {
-        const message = err.errors[0]?.message || 'Validation error';
-        error = new ErrorResponse(message, 400);
-    }
+// eslint-disable-next-line no-unused-vars
+const errorHandler = (err, req, res, next) => {
+  let { statusCode, message } = err;
+  if (config.env === 'production' && !err.isOperational) {
+    statusCode = httpStatus.INTERNAL_SERVER_ERROR;
+    message = httpStatus[httpStatus.INTERNAL_SERVER_ERROR];
+  }
 
-    // Duplicate key error (e.g., unique constraint violation)
-    if (err.code === 11000) {
-        let message = 'Duplication error';
-        Object.keys(err.keyValue).forEach((key) => {
-            message = `${key} already exists`;
-        });
+  res.locals.errorMessage = err.message;
 
-        error = new ErrorResponse(message, 400);
-    }
+  const response = {
+    code: statusCode,
+    message,
+    ...(config.env === 'development' && { stack: err.stack }),
+  };
 
-    // Validation errors
-    if (err.name === 'ValidationError') {
-        let message = 'Validation error';
-        Object.keys(err.errors).forEach((field) => {
-            message = err.errors[field].message;
-        });
-        
-        error = new ErrorResponse(message, 400);
-    }
+  if (config.env === 'development') {
+    logger.error(err);
+  }
 
-    // Custom error handling
-    if (err.name === 'CastError') {
-        const field = err.path;
-        const message = `Invalid ${field}`;
-        
-        error = new ErrorResponse(message, 400);
-    }
-    
-    // TypeError error handling
-    if (err.name === 'TypeError') {
-        const message = err.message;
-        error = new ErrorResponse(message, 400);
-    }
+  res.status(statusCode).send(response);
+};
 
-    // SyntaxError error handling
-    if (err.name === 'SyntaxError') {
-        const message = err.message;
-        error = new ErrorResponse(message, 400);
-    }
-
-    // StrictPopulateError error handling
-    if (err.name === 'StrictPopulateError') {
-        const message = err.message;
-        error = new ErrorResponse(message, 400);
-    }
-
-    res.status(error.statusCode || 500).json({
-        success: false,
-        error: error.message || "Internal server error"
-    });
-}
-
-module.exports = handleError;
+module.exports = {
+  errorConverter,
+  errorHandler,
+};

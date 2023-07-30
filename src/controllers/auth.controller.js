@@ -1,371 +1,59 @@
-const authService = require('../services/auth.service');
-const BlacklistToken = require('../models/blacklistToken.model');
-const ErrorResponse = require('../utils/error.response');
-const {
-    validateCreateUserObject,
-    validateCreateRiderObject,
-    validateLoginCredentials,
-    validatePasswordChange,
-    validateEmailAddress
-} = require('../validations/auth.validation');
+const httpStatus = require('http-status');
+const catchAsync = require('../utils/catchAsync');
+const { authService, userService, tokenService, emailService } = require('../services');
 
-/**
- * @desc Register a new user
- * @route POST /v1/auth/register
- * @access Public
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpRegisterUser(req, res, next) {
-    try {
-        const { firstName, surName, email, address, city, phoneNumber, password } = req.body;
-        const userData = await validateCreateUserObject
-            .parseAsync({ firstName, surName, email, address, city, phoneNumber, password });
+const register = catchAsync(async (req, res) => {
+  const user = await userService.createUser(req.body);
+  const tokens = await tokenService.generateAuthTokens(user);
+  res.status(httpStatus.CREATED).send({ user, tokens });
+});
 
-        const result = await authService.registerUser(userData);
+const login = catchAsync(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await authService.loginUserWithEmailAndPassword(email, password);
+  const tokens = await tokenService.generateAuthTokens(user);
+  res.send({ user, tokens });
+});
 
-        res.status(201).json({
-            status: true,
-            message: 'User registered successfully',
-            accessToken: result
-        });
-    } catch (error) {
-        next(error);
-    }
-}
+const logout = catchAsync(async (req, res) => {
+  await authService.logout(req.body.refreshToken);
+  res.status(httpStatus.NO_CONTENT).send();
+});
 
-/**
- * @desc Send mail to resend OTP
- * @route GET /v1/auth/resend_otp
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpMailForResendOTP(req, res, next) {
-    try {
-        const { id } = req.user;
+const refreshTokens = catchAsync(async (req, res) => {
+  const tokens = await authService.refreshAuth(req.body.refreshToken);
+  res.send({ ...tokens });
+});
 
-        const result = await authService.mailForResendOTP(id);
+const forgotPassword = catchAsync(async (req, res) => {
+  const resetPasswordToken = await tokenService.generateResetPasswordToken(req.body.email);
+  await emailService.sendResetPasswordEmail(req.body.email, resetPasswordToken);
+  res.status(httpStatus.NO_CONTENT).send();
+});
 
-        res.status(200).json({
-            status: true,
-            message: result
-        });
-    } catch (error) {
-        next(error);
-    }
-}
+const resetPassword = catchAsync(async (req, res) => {
+  await authService.resetPassword(req.query.token, req.body.password);
+  res.status(httpStatus.NO_CONTENT).send();
+});
 
-/**
- * @desc Confirm user registration with OTP
- * @route PUT /v1/auth/confirm
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpConfirmUser(req, res, next) {
-    try {
-        const { id } = req.user;
-        const { OTP } = req.body;
+const sendVerificationEmail = catchAsync(async (req, res) => {
+  const verifyEmailToken = await tokenService.generateVerifyEmailToken(req.user);
+  await emailService.sendVerificationEmail(req.user.email, verifyEmailToken);
+  res.status(httpStatus.NO_CONTENT).send();
+});
 
-        const result = await authService.confirmUserRegistration(id, OTP);
-
-        res.status(200).json({
-            status: true,
-            message: result
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc User login
- * @route POST /v1/auth/login
- * @access Public
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpLoginUser(req, res, next) {
-    try {
-        const { email, password } = req.body;
-
-        const userData = validateLoginCredentials.parse({ email, password });
-
-        const result = await authService.loginUser(userData);
-
-        res.json({
-            status: true,
-            message: 'User login successfully',
-            accessToken: result,
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Send mail for password reset
- * @route POST /v1/auth/forgot_password
- * @access Public
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpMailForPasswordReset(req, res, next) {
-    try {
-        const { email } = req.body;
-
-        const userData = validateEmailAddress.parse({ email });
-
-        const result = await authService.mailForPasswordReset(userData);
-
-        res.json({
-            status: true,
-            message: 'Mail sent successfully',
-            accessToken: result,
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Validate OTP for password reset
- * @route PUT /v1/auth/validate_otp
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpValidateOTPForPasswordReset(req, res, next) {
-    try {
-        const { id } = req.user;
-        const { OTP } = req.body;
-
-        const result = await authService.validateOTPForPasswordReset(id, OTP);
-
-        res.status(200).json({
-            status: true,
-            message: result
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-
-/**
- * @desc Reset user password
- * @route PUT /v1/auth/reset_password
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpResetUserPassword(req, res, next) {
-    try {
-        const { id } = req.user;
-        const { newPassword } = req.body;
-
-        const userData = validatePasswordChange.parse({ newPassword });
-
-        const result = await authService.resetUserPassword(id, userData);
-
-        res.status(200).json({
-            status: true,
-            message: result
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Register a new rider
- * @route POST /v1/auth/register/rider
- * @access Public
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpRegisterRider(req, res, next) {
-    try {
-        const { firstName, surName, email, address, city, phoneNumer, password } = req.body;
-        const riderData = await validateCreateUserObject
-            .parseAsync({ firstName, surName, email, address, city, phoneNumer, password });
-
-        const result = await authService.registerRider(riderData);
-
-        res.status(201).json({
-            status: true,
-            message: 'Rider registered successfully',
-            accessToken: result
-        })
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Register a new rider
- * @route POST /v1/auth/register/rider-docs
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpRegisterRiderDocs(req, res, next) {
-    try {
-        const { id } = req.user;
-        const { vehicleType, color, model, chasisNumber, plateNumber, ownedSince } = req.body;
-
-        const riderData = await validateCreateRiderObject
-            .parseAsync({ vehicleType, color, model, chasisNumber, plateNumber, ownedSince });
-
-        const result = await authService.registerRiderDocs(id, riderData);
-
-        res.status(201).json({
-            status: true,
-            message: 'Rider Document registered successfully',
-            accessToken: result
-        })
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Resend OTP for account unlock
- * @route PUT /v1/auth/resend_otp_unlock
- * @access Public
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpMailForResendUnlockOTP(req, res, next) {
-    try {
-        const { email } = req.body;
-
-        const result = await authService.mailForResendUnlockOTP(email);
-
-        res.status(200).json({
-            status: true,
-            message: result
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Validate OTP for account unlock
- * @route PUT /v1/auth/unlock_account
- * @access Public
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpUnlockAccount(req, res, next) {
-    try {
-        const { OTP, email } = req.body;
-
-        const result = await authService.unlockAccount(email, OTP);
-
-        res.status(200).json({
-            status: true,
-            message: result
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Google callback route to give user access token
- * @route GET /v1/auth/google/callback
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @returns {Function} - The success response or an error.
- */
-async function httpGoogleCallback(req, res, next) {
-    try {
-        const profile = req.user;
-        const { statusCode, data } = await authService.handleGoogleCallback(profile);
-
-        res.status(statusCode).json({
-            status: data.status,
-            message: data.message,
-            accessToken: data.accessToken
-        });
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * @desc Logout user
- * @route GET /v1/auth/logout
- * @access Private
- *
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next function to call.
- * @returns {Function} - The success response or an error.
- */
-async function httpLogoutUser(req, res, next) {
-    try {
-        const authHeader = req.header('Authorization') || req.header('authorization');
-        const token = authHeader && authHeader.split(' ')[1];
-
-        await BlacklistToken.create({ token });
-
-        res.status(200).json({ message: 'Logout successful' });
-    } catch (error) {
-        next(error);
-    }
-}
+const verifyEmail = catchAsync(async (req, res) => {
+  await authService.verifyEmail(req.query.token);
+  res.status(httpStatus.NO_CONTENT).send();
+});
 
 module.exports = {
-    httpRegisterUser,
-    httpMailForResendOTP,
-    httpConfirmUser,
-    httpLoginUser,
-    httpMailForPasswordReset,
-    httpValidateOTPForPasswordReset,
-    httpResetUserPassword,
-    httpRegisterRider,
-    httpRegisterRiderDocs,
-    httpMailForResendUnlockOTP,
-    httpUnlockAccount,
-    httpGoogleCallback,
-    httpLogoutUser,
+  register,
+  login,
+  logout,
+  refreshTokens,
+  forgotPassword,
+  resetPassword,
+  sendVerificationEmail,
+  verifyEmail,
 };

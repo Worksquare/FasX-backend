@@ -1,338 +1,99 @@
-const bcrypt = require('bcrypt');
+const httpStatus = require('http-status');
+const tokenService = require('./token.service');
+const userService = require('./user.service');
+const Token = require('../models/token.model');
+const ApiError = require('../utils/ApiError');
+const { tokenTypes } = require('../config/tokens');
 
-const UserModel = require('../models/user.model');
-const DeliveryPartnerModel = require('../models/deliveryPartner.model');
-const ErrorResponse = require('../utils/error.response');
-const { generateToken } = require('../utils/token');
-const generateAvatar = require('../utils/generateAvatar');
-const sendMail = require('../utils/sendMail');
-const { storeOTP, verifyOTP, deleteOTP, generateOTP } = require('../utils/OTP');
+/**
+ * Login with username and password
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<User>}
+ */
+const loginUserWithEmailAndPassword = async (email, password) => {
+  const user = await userService.getUserByEmail(email);
+  if (!user || !(await user.isPasswordMatch(password))) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
+  }
+  return user;
+};
 
-// Register a new user
-async function registerUser(userData) {
-    try {
-        const avatar = generateAvatar(userData.email);
-        const user = { ...userData, avatar };
-        const savedUser = await UserModel.create(user);
+/**
+ * Logout
+ * @param {string} refreshToken
+ * @returns {Promise}
+ */
+const logout = async (refreshToken) => {
+  const refreshTokenDoc = await Token.findOne({ token: refreshToken, type: tokenTypes.REFRESH, blacklisted: false });
+  if (!refreshTokenDoc) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not found');
+  }
+  await refreshTokenDoc.remove();
+};
 
-        const otp = generateOTP();
-        await storeOTP(savedUser.email, otp);
-
-        const name = `${savedUser.firstName} ${savedUser.surName}`;
-        await sendMail(otp, savedUser.email, 'register', name);
-
-        const accessToken = generateToken(savedUser._id, 'confirm');
-
-        return accessToken
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
+/**
+ * Refresh auth tokens
+ * @param {string} refreshToken
+ * @returns {Promise<Object>}
+ */
+const refreshAuth = async (refreshToken) => {
+  try {
+    const refreshTokenDoc = await tokenService.verifyToken(refreshToken, tokenTypes.REFRESH);
+    const user = await userService.getUserById(refreshTokenDoc.user);
+    if (!user) {
+      throw new Error();
     }
-}
+    await refreshTokenDoc.remove();
+    return tokenService.generateAuthTokens(user);
+  } catch (error) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');
+  }
+};
 
-// Send mail to resend OTP
-async function mailForResendOTP(userId) {
-    try {
-        const user = await UserModel.findById(userId).select('-password');
-        if (!user) throw new ErrorResponse('User not found', 404);
-
-        if (!user.isConfirmed) {
-            await deleteOTP(user.email);
-            
-            const otp = generateOTP();
-            await storeOTP(user.email, otp);
-
-            const name = `${user.firstName} ${user.surName}`;
-            await sendMail(otp, user.email, 'register', name);
-
-            let message = 'Mail sent successfully'
-            return message;
-        } else {
-            throw new ErrorResponse('User already confirmed', 400);
-        }
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
+/**
+ * Reset password
+ * @param {string} resetPasswordToken
+ * @param {string} newPassword
+ * @returns {Promise}
+ */
+const resetPassword = async (resetPasswordToken, newPassword) => {
+  try {
+    const resetPasswordTokenDoc = await tokenService.verifyToken(resetPasswordToken, tokenTypes.RESET_PASSWORD);
+    const user = await userService.getUserById(resetPasswordTokenDoc.user);
+    if (!user) {
+      throw new Error();
     }
-}
+    await userService.updateUserById(user.id, { password: newPassword });
+    await Token.deleteMany({ user: user.id, type: tokenTypes.RESET_PASSWORD });
+  } catch (error) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Password reset failed');
+  }
+};
 
-// Confirm user's mail with OTP
-async function confirmUserRegistration(userId, OTP) {
-    try {
-        const user = await UserModel.findById(userId).select('-password');
-        if (!user) throw new ErrorResponse('User not found', 404);
-
-        if (user.isConfirmed) throw new ErrorResponse('User already confirmed', 400);
-
-        const storedOTP = await verifyOTP(OTP, user.email);
-        if (storedOTP) {
-            user.isConfirmed = true;
-            await deleteOTP(user.email);
-            await user.save();
-
-            const message = 'OTP verified successfully and User is confirmed'
-            return message;
-        } else {
-            throw new ErrorResponse('Invalid OTP', 400);
-        }
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
+/**
+ * Verify email
+ * @param {string} verifyEmailToken
+ * @returns {Promise}
+ */
+const verifyEmail = async (verifyEmailToken) => {
+  try {
+    const verifyEmailTokenDoc = await tokenService.verifyToken(verifyEmailToken, tokenTypes.VERIFY_EMAIL);
+    const user = await userService.getUserById(verifyEmailTokenDoc.user);
+    if (!user) {
+      throw new Error();
     }
-}
-
-// User login
-async function loginUser(userData) {
-    try {
-        let user = await UserModel.findOne({ email: userData.email });
-        if (!user) throw new ErrorResponse('Incorrect credentials', 400);
-
-        const isMatch = await user.comparePassword(userData.password);
-        if (!isMatch) {
-            const MaximumLoginAttempts = 7;
-            user.loginAttempts += 1;
-
-            if (user.loginAttempts === MaximumLoginAttempts) {
-                const otp = generateOTP();
-                const hashOTP = await bcrypt.hash(otp, 10);
-
-                user.isLocked = true;
-                user.OTPStore = hashOTP;
-                await user.save();
-
-                const name = `${user.firstName} ${user.surName}`;
-                await sendMail(otp, user.email, 'login attempts', name);
-
-                throw new ErrorResponse('Account locked due to multiple login attempts. Check your email for unlock instructions.', 400);
-            }
-
-            await user.save();
-            const RemainingLoginAttempts = MaximumLoginAttempts - user.loginAttempts;
-
-            throw new ErrorResponse(`Invalid credentials... RemainingLoginAttempts = ${RemainingLoginAttempts}`, 400);
-        }
-
-        const accessToken = user.generateAccessToken();
-        user.loginAttempts = 0;
-        user.lastLogin = new Date();
-        await user.save();
-
-        return accessToken;
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Send mail for password reset
-async function mailForPasswordReset(userData) {
-    try {
-        const user = await UserModel.findOne({ email: userData.email }).select('-password');
-        if (!user) throw new ErrorResponse('User not found', 404);
-
-        if (user.isConfirmed) {
-            const otp = generateOTP();
-            await storeOTP(user.email, otp);
-
-            const name = `${user.firstName} ${user.surName}`;
-            await sendMail(otp, user.email, 'forgot password', name);
-
-            const accessToken = generateToken(user._id, 'reset');
-
-            return accessToken;
-        } else {
-            throw new ErrorResponse('Email not confirmed', 400);
-        }
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Validate OTP for password reset
-async function validateOTPForPasswordReset(userId, OTP) {
-    try {
-        const user = await UserModel.findById(userId).select('-password');
-        if (!user) throw new ErrorResponse('User not found', 404);
-
-        const storedOTP = await verifyOTP(OTP, user.email);
-
-        if (storedOTP) {
-            user.otpTracker = true;
-            await user.save();
-
-            let message = 'OTP verified successfully.';
-            return message;
-        } else {
-            throw new ErrorResponse('Invalid OTP', 400);
-        }
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Reset user password
-async function resetUserPassword(userId, userData) {
-    try {
-        let user = await UserModel.findById(userId);
-        if (!user) throw new ErrorResponse('User not found', 404);
-        if (!user.otpTracker) throw new ErrorResponse('OTP not Verified', 400);
-
-        user.password = userData.newPassword;
-        user.otpTracker = false;
-        await user.save();
-
-        const message = 'Password reset successfully, kindly login';
-        return message;
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Register a new user
-async function registerRider(riderData) {
-    try {
-        const avatar = generateAvatar(riderData.email);
-        const rider = { ...userData, avatar };
-        const user = await UserModel.create(rider);
-
-        const accessToken = generateToken(user._id, 'confirm');
-
-        return accessToken;
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Register a new rider
-async function registerRiderDocs(userId, riderData) {
-    try {
-        const rider = { ...riderData, userId };
-        await DeliveryPartnerModel.create(rider);
-
-        const user = await UserModel.findById(userId).select('-password');
-        user.role = 'rider';
-        await user.save();
-
-        const otp = generateOTP();
-        await storeOTP(user.email, otp);
-
-        const name = `${user.firstName} ${user.surName}`
-        await sendMail(otp, user.email, 'register', name);
-
-        const accessToken = generateToken(user._id, 'confirm');
-
-        return accessToken;
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Resend OTP for account unlock
-async function mailForResendUnlockOTP(email) {
-    try {
-        const user = await UserModel.findOne({ email }).select('-password -confirmPassword');
-        if (!user) throw new ErrorResponse('User not found', 404);
-
-        if (user.isLocked && user.OTPStore) {
-            const otp = generateOTP();
-            const hashOTP = await bcrypt.hash(otp, 10);
-
-            user.OTPStore = hashOTP;
-            await user.save();
-
-            await sendMail(otp, user.email, 'login attempts', user.name);
-
-            const message = 'Mail sent successfully.';
-            return message;
-        } else {
-            throw new ErrorResponse('Account not locked', 400);
-        }
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Validate OTP for account unlock
-async function unlockAccount(email, OTP) {
-    try {
-        const user = await UserModel.findOne({ email }).select('-password -confirmPassword');
-        if (!user) throw new ErrorResponse('User not found', 404);
-
-        if (user.isLocked && user.OTPStore) {
-            const isMatch = await bcrypt.compare(OTP, user.OTPStore);
-
-            if (isMatch) {
-                user.OTPStore = null;
-                user.loginAttempts = 0;
-                user.isLocked = false;
-                await user.save();
-
-                let message = 'Account successfully unlocked.';
-                return message;
-            } else {
-                throw new ErrorResponse('Invalid OTP', 400);
-            }
-        } else {
-            throw new ErrorResponse('Account not locked', 400);
-        }
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
-
-// Google callback route to give user access token
-async function handleGoogleCallback(profile) {
-    try {
-        let user = await UserModel.findOne({ googleId: profile.id });
-        let token;
-
-        if (user) {
-            token = user.generateAccessToken();
-        } else {
-            user = await UserModel.create({
-                googleId: profile._json.sub,
-                firstName: profile._json.give_name,
-                surName: profile._json.family_name,
-                isConfirmed: profile._json.email_verified,
-                email: profile._json.email,
-                avatar: profile._json.picture,
-            });
-
-            const otp = generateOTP();
-            await storeOTP(user.email, otp);
-            await sendMail(otp, user.email, 'register', user.name);
-            const token = generateToken(user._id, 'confirm');
-
-            return {
-                statusCode: 201,
-                data: {
-                    status: true,
-                    message: 'User registered successfully with Google',
-                    accessToken: token,
-                }
-            };
-        }
-
-        return {
-            statusCode: 200,
-            data: {
-                status: true,
-                message: 'Google Access granted',
-                accessToken: token,
-            }  
-        };
-    } catch (error) {
-        throw new ErrorResponse(error.message, 500);
-    }
-}
+    await Token.deleteMany({ user: user.id, type: tokenTypes.VERIFY_EMAIL });
+    await userService.updateUserById(user.id, { isEmailVerified: true });
+  } catch (error) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Email verification failed');
+  }
+};
 
 module.exports = {
-    registerUser,
-    mailForResendOTP,
-    confirmUserRegistration,
-    loginUser,
-    mailForPasswordReset,
-    validateOTPForPasswordReset,
-    resetUserPassword,
-    registerRider,
-    registerRiderDocs,
-    mailForResendUnlockOTP,
-    unlockAccount,
-    handleGoogleCallback
+  loginUserWithEmailAndPassword,
+  logout,
+  refreshAuth,
+  resetPassword,
+  verifyEmail,
 };

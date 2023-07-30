@@ -1,68 +1,121 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const validator = require('validator');
+const bcrypt = require('bcryptjs');
+const { toJSON, paginate } = require('./plugins');
 
-const userSchema = new mongoose.Schema({
-    // User details
-    avatar: { type: String, required: true },
-    firstName: { type: String, trim: true, required: true },
-    surName: { type: String, trim: true, required: true },
-    email: { type: String, unique: true },
-    address: { type: String },
-    city: { type: String },
-    phoneNumber: { type: String, trim: true, unique: true },
-    password: { type: String },
-    isConfirmed: { type: Boolean, default: false },
-    role: { type: String, enum: ['user', 'rider'], default: 'user' },
+const userSchema = mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+    },
+    otherName: {
+      type: String,
+      trim: true,
+    },
+    phoneNumber: {
+      type: String,
+      maxlength: 255,
+    },
+    email: {
+      type: String,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      validate(value) {
+        if (!validator.isEmail(value)) {
+          throw new Error('Invalid email');
+        }
+      },
+    },
+    BVN: {
+      type: Number,
+    },
+    identification: {
+      type: String,
+    },
+    locationGeometry: {
+      type: [String],
+    },
+    vehicleType: {
+      type: String,
+      enum: ['car', 'bicycle', 'bike', 'lorry', 'bus', 'boat', 'ship'],
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+    },
+    password: {
+      type: String,
+      trim: true,
+      minlength: 8,
+      validate(value) {
+        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
+          throw new Error('Password must contain at least one letter and one number');
+        }
+      },
+      private: true, // used by the toJSON plugin
+    },
+    role: {
+      type: String,
+      default: 'user',
+    },
+    mediaIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Media',
+      },
+    ],
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-    // Security Values
-    isLocked: { type: Boolean, default: false }, 
-    loginAttempts: { type: Number, default: 0 },
-    OTPStore: { type: String },
-    otpTracker: { type: Boolean, default: false },
+// add plugin that converts mongoose to json
+userSchema.plugin(toJSON);
+userSchema.plugin(paginate);
 
-    // OAuth Values
-    googleId: { type: String },
-    facebookId: { type: String },
-}, { timestamps: true });
+/**
+ * Check if email is taken
+ * @param {string} email - The user's email
+ * @param {ObjectId} [excludeUserId] - The id of the user to be excluded
+ * @returns {Promise<boolean>}
+ */
+userSchema.statics.isEmailTaken = async function (email, excludeUserId) {
+  const user = await this.findOne({ email, _id: { $ne: excludeUserId } });
+  return !!user;
+};
+
+/**
+ * Check if password matches the user's password
+ * @param {string} password
+ * @returns {Promise<boolean>}
+ */
+userSchema.methods.isPasswordMatch = async function (password) {
+  const user = this;
+  return bcrypt.compare(password, user.password);
+};
 
 userSchema.pre('save', async function (next) {
-    try {
-        if (!this.isModified('password')) return next();
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(this.password, salt);
-
-        this.password = hashedPassword;
-
-        next();
-    } catch (error) {
-        next(error);
-    }
+  const user = this;
+  if (user.isModified('password')) {
+    user.password = await bcrypt.hash(user.password, 8);
+  }
+  next();
 });
 
-userSchema.methods.comparePassword = async function (password) {
-    try {
-        return await bcrypt.compare(password, this.password);
-    } catch (error) {
-        return false;
-    }
-}
+/**
+ * @typedef User
+ */
+const User = mongoose.model('User', userSchema);
 
-userSchema.methods.generateAccessToken = function () {
-    const payload = {
-        id: this._id,
-        role: this.role,
-        iat: Date.now()
-    };
-
-    const options = {
-        expiresIn: '1d'
-    };
-
-    return jwt.sign(payload, process.env.JWT_ACCESS_TOKEN_SECRET, options);
-}
-
-const UserModel = mongoose.model('User', userSchema);
-
-module.exports = UserModel;
+module.exports = User;
