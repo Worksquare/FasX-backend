@@ -1,12 +1,18 @@
 {
-  "name": "create-nodejs-express-app",
-  "version": "1.7.0",
-  "description": "Create a Node.js app for building production-ready RESTful APIs using Express, by running one command",
-  "bin": "bin/createNodejsApp.js",
+  "name": "fastx-logistic-backend",
+  "version": "1.0.0",
+  "description": "A Logistics Application for Online Delivery Services",
   "main": "src/index.js",
-  "repository": "https://github.com/hagopj13/node-express-boilerplate.git",
-  "author": "Hagop Jamkojian <hagopj13@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Worksquare/FasX.git"
+  },
+  "authors": "Musa Ojo <musaojo1710@yahoo.com>, Obinna Duru <duruobinnafranklin@gmail.com>",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Worksquare/FasX/issues"
+  },
+  "homepage": "https://github.com/Worksquare/FasX#readme",
   "engines": {
     "node": ">=12.0.0"
   },
@@ -29,7 +35,6 @@
   "keywords": [
     "node",
     "node.js",
-    "boilerplate",
     "generator",
     "express",
     "rest",
