@@ -41,7 +41,7 @@ const startServer = async () => {
       exitHandler();
     });
 
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason) => {
       logger.error('Unhandled Rejection:', reason);
       exitHandler();
     });
