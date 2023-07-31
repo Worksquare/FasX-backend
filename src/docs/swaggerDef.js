@@ -13,6 +13,9 @@ const swaggerDef = {
   },
   servers: [
     {
+      url: `https://fastx-logistic-api.onrender.com/v1`,
+    },
+    {
       url: `http://localhost:${config.port}/v1`,
     },
   ],
