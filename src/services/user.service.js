@@ -15,15 +15,29 @@ const createUser = async (userBody) => {
 };
 
 /**
- * Create a Partner
+ * Create a user
  * @param {Object} userBody
  * @returns {Promise<User>}
  */
-const createPartner = async (userBody) => {
-  if (await User.isEmailTaken(userBody.email)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
+const createUserDocument = async (partnerDocument) => {
+  if (await User.findByid(partnerDocument.userId)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'User do not exist');
   }
-  return User.create(userBody);
+  const userDocument = User.findByIdAndUpdate(
+    partnerDocument.userId,
+    {
+      userId: partnerDocument.userId,
+      vehicleType: partnerDocument.vehicleType,
+      color: partnerDocument.color,
+      model: partnerDocument.model,
+      chasisNumber: partnerDocument.chasisNumber,
+      plateNumber: partnerDocument.plateNumber,
+      ownedSince: partnerDocument.ownedSince,
+      role: 'rider',
+    },
+    { new: true }
+  );
+  return userDocument;
 };
 
 /**
@@ -98,5 +112,5 @@ module.exports = {
   getUserByEmail,
   updateUserById,
   deleteUserById,
-  createPartner,
+  createUserDocument,
 };

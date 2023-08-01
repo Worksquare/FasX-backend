@@ -3,80 +3,40 @@ const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const { toJSON, paginate } = require('./plugins');
 
-const userSchema = mongoose.Schema(
+const userSchema = new mongoose.Schema(
   {
-    firstName: {
-      type: String,
-      trim: true,
-    },
-    lastName: {
-      type: String,
-      trim: true,
-    },
-    otherName: {
-      type: String,
-      trim: true,
-    },
-    phoneNumber: {
-      type: String,
-      maxlength: 255,
-    },
+    profileImage: { type: String, trim: true },
+    firstName: { type: String, trim: true, required: true },
+    surName: { type: String, trim: true, required: true },
+    address: { type: String },
+    city: { type: String },
+    phoneNumber: { type: String, trim: true, unique: true, maxlength: 255 },
+    role: { type: String, enum: ['user', 'rider'], default: 'user' },
+    vehicleType: { type: String, enum: ['car', 'bicycle', 'bike', 'lorry', 'bus', 'boat', 'ship'] },
+    mediaIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Media' }],
+    isEmailVerified: { type: Boolean, default: false },
     email: {
       type: String,
       unique: true,
-      trim: true,
       lowercase: true,
       validate(value) {
         if (!validator.isEmail(value)) {
           throw new Error('Invalid email');
         }
-      },
-    },
-    BVN: {
-      type: Number,
-    },
-    identification: {
-      type: String,
-    },
-    locationGeometry: {
-      type: [String],
-    },
-    vehicleType: {
-      type: String,
-      enum: ['car', 'bicycle', 'bike', 'lorry', 'bus', 'boat', 'ship'],
-    },
-    profileImage: {
-      type: String,
-      trim: true,
+      }
     },
     password: {
       type: String,
-      trim: true,
-      minlength: 8,
       validate(value) {
         if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
           throw new Error('Password must contain at least one letter and one number');
         }
       },
-      private: true, // used by the toJSON plugin
-    },
-    role: {
-      type: String,
-      default: 'user',
-    },
-    mediaIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Media',
-      },
-    ],
-    isEmailVerified: {
-      type: Boolean,
-      default: false,
-    },
+      private: true,
+    }
   },
   {
-    timestamps: true,
+    timestamps: true
   }
 );
 

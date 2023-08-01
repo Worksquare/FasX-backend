@@ -46,6 +46,9 @@ module.exports = router;
  *               - email
  *               - password
  *               - role
+ *               - address
+ *               - city
+ *               - phoneNumber
  *             properties:
  *               name:
  *                 type: string
@@ -61,11 +64,21 @@ module.exports = router;
  *               role:
  *                  type: string
  *                  enum: [user, admin]
+ *               address:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *                 description: must not be more than 255 character
  *             example:
- *               name: fake name
+ *               firstName: fake name
  *               email: fake@example.com
  *               password: password1
  *               role: user
+ *               address: Ojo market
+ *               city: lagos mainLand
+ *               phoneNumber: 090000000045
  *     responses:
  *       "201":
  *         description: Created

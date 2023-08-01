@@ -13,11 +13,49 @@ components:
         role:
           type: string
           enum: [user, admin]
+        address:
+          type: string
+        city:
+          type: string
+        phoneNumber:
+          type: string
       example:
         id: 5ebac534954b54139806c112
         email: fake@example.com
-        name: fake name
+        firstName: fake firstName
+        surName: fake surName
         role: user
+        address: ojo market
+        city: lagos mainland
+        phoneNumber: '+23490000000045'
+
+    PartnerDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        vehicleType:
+          type: string
+          enum: [car, bike]
+        color:
+          type: string
+        model:
+          type: string
+        chasisNumber:
+          type: string
+        plateNumber:
+          type: string
+        ownedSince:
+          type: date
+      example:
+        id: 5ebac534954b54139806c112
+        color: car color
+        model: car model
+        chasisNumber: '23490000000045'
+        plateNumber: '23490000000045'
+        vehicleType: boat
+        role: rider
+        ownedSince: 1234567891
 
     Order:
       type: object

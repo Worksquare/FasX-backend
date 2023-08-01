@@ -5,18 +5,29 @@ const catchAsync = require('../utils/catchAsync');
 const { userService } = require('../services');
 
 const createUser = catchAsync(async (req, res) => {
-  const user = await userService.createUser(req.body);
+  const { firstName, surName, email, password, address, city, phoneNumber } = req.body;
+
+  const userBody = { firstName, surName, email, password, address, city, phoneNumber };
+
+  const user = await userService.createUser(userBody);
+
   res.status(httpStatus.CREATED).send(user);
 });
 
-const createPartner = catchAsync(async (req, res) => {
-  const user = await userService.createUser(req.body);
+const createPartnerDocument = catchAsync(async (req, res) => {
+  const userId = req.params;
+  const { vehicleType, color, model, chasisNumber, plateNumber, ownedSince } = req.body;
+
+  const partnerDocument = { userId, vehicleType, color, model, chasisNumber, plateNumber, ownedSince };
+
+  const user = await userService.createUserDocument(partnerDocument);
   res.status(httpStatus.CREATED).send(user);
 });
 
 const getUsers = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['name', 'role']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
+
   const result = await userService.queryUsers(filter, options);
   res.send(result);
 });
@@ -45,5 +56,5 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
-  createPartner,
+  createPartnerDocument,
 };
