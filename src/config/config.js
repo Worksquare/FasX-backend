@@ -53,11 +53,12 @@ module.exports = {
   email: {
     smtp: {
       service: 'gmail',
+      secure: true,
       auth: {
         user: envVars.SMTP_USERNAME,
         pass: envVars.SMTP_PASSWORD,
       },
-      // tls: { rejectUnauthorized: false }
+      tls: { rejectUnauthorized: true }
     },
     from: envVars.EMAIL_FROM,
   },
