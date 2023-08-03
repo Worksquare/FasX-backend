@@ -31,6 +31,14 @@ const defaultRoutes = [
 const devRoutes = [
   // routes available only in development mode
   {
+    path: '/auth',
+    route: authRoute,
+  },
+  {
+    path: '/users',
+    route: userRoute,
+  },
+  {
     path: '/docs',
     route: docsRoute,
   },
