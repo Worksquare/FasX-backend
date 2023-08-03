@@ -57,7 +57,7 @@ module.exports = {
         user: envVars.SMTP_USERNAME,
         pass: envVars.SMTP_PASSWORD,
       },
-      tls: { rejectUnauthorized: false }
+      // tls: { rejectUnauthorized: false }
     },
     from: envVars.EMAIL_FROM,
   },
