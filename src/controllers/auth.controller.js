@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { authService, userService, tokenService, emailService } = require('../services');
+const config = require('../config/config');
 
 const register = catchAsync(async (req, res) => {
   const { firstName, surName, email, password, address, city, phoneNumber } = req.body;
@@ -47,8 +48,15 @@ const sendVerificationEmail = catchAsync(async (req, res) => {
 });
 
 const verifyEmail = catchAsync(async (req, res) => {
-  await authService.verifyEmail(req.query.token);
-  res.status(httpStatus.NO_CONTENT).send();
+  const verification = await authService.verifyEmail(req.query.token);
+
+  if (!verification) {
+    const url = `${config.frontend.url}/verification_email`;
+    res.status(httpStatus.MOVED_PERMANENTLY).redirect(url);
+  }
+
+  const url = `${config.frontend.url}/verify_email`;
+  res.status(httpStatus.MOVED_PERMANENTLY).redirect(url);
 });
 
 module.exports = {

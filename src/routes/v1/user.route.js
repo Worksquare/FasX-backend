@@ -17,6 +17,8 @@ router
   .patch(auth('manageUsers'), validate(userValidation.updateUser), userController.updateUser)
   .delete(auth('manageUsers'), validate(userValidation.deleteUser), userController.deleteUser);
 
+router.get('/riders', auth('getUsers'), userController.searchRiders);
+
 module.exports = router;
 
 /**
@@ -157,6 +159,42 @@ module.exports = router;
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
  *         $ref: '#/components/responses/Forbidden'
+ */
+
+/**
+ * @swagger
+ * /users/riders:
+ *   get:
+ *     summary: Search riders based on address, city, and vehicle type.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: address
+ *         schema:
+ *           type: string
+ *         description: Rider's address to search for.
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *         description: Rider's city to search for.
+ *       - in: query
+ *         name: vehicleType
+ *         schema:
+ *           type: string
+ *           enum: [car, bicycle, bike, lorry, bus, boat, ship]
+ *         description: Type of vehicle the rider uses.
+ *     responses:
+ *       '200':
+ *         description: List of riders matching the search criteria.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
  */
 
 /**

@@ -73,6 +73,38 @@ const getUserByEmail = async (email) => {
 };
 
 /**
+ * Searching riders by address, city, and vehicle type
+ * @param {ObjectId} address
+ * @param {Object} city
+ * @param {Object} vehicleType
+ * @returns {Promise<User>}
+ */
+const searchRiders = async (address, city, vehicleType) => {
+  const query = { role: 'rider' };
+
+  const escapeRegExp = (string) => {
+    return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+  };
+
+  if (address) {
+    const addressRegex = new RegExp(escapeRegExp(address), 'i');
+    query.address = { $regex: addressRegex };
+  }
+
+  if (city) {
+    const cityRegex = new RegExp(escapeRegExp(city), 'i');
+    query.city = { $regex: cityRegex };
+  }
+
+  if (vehicleType) {
+    query.vehicleType = vehicleType;
+  }
+
+  const riders = await User.find(query);
+  return riders;
+};
+
+/**
  * Update user by id
  * @param {ObjectId} userId
  * @param {Object} updateBody
@@ -108,6 +140,7 @@ const deleteUserById = async (userId) => {
 module.exports = {
   createUser,
   queryUsers,
+  searchRiders,
   getUserById,
   getUserByEmail,
   updateUserById,

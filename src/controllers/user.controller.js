@@ -40,6 +40,12 @@ const getUser = catchAsync(async (req, res) => {
   res.send(user);
 });
 
+const searchRiders = catchAsync(async (req, res) => {
+  const { address, city, vehicleType } = req.query;
+  const riders = await userService.searchRiders(address, city, vehicleType);
+  res.json(riders);
+});
+
 const updateUser = catchAsync(async (req, res) => {
   const user = await userService.updateUserById(req.params.userId, req.body);
   res.send(user);
@@ -54,6 +60,7 @@ module.exports = {
   createUser,
   getUsers,
   getUser,
+  searchRiders,
   updateUser,
   deleteUser,
   createPartnerDocument,

@@ -4,8 +4,6 @@ const Joi = require('joi');
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-console.log('NODE_ENV', process.env.NODE_ENV)
-
 const envVarsSchema = Joi.object()
   .keys({
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
@@ -60,7 +58,7 @@ module.exports = {
         user: envVars.SMTP_USERNAME,
         pass: envVars.SMTP_PASSWORD,
       },
-      tls: { rejectUnauthorized: false }
+      tls: { rejectUnauthorized: false },
     },
     from: envVars.EMAIL_FROM,
   },
@@ -68,5 +66,8 @@ module.exports = {
     CLOUD_NAME: envVars.CLOUD_NAME,
     CLOUDINARY_API_KEY: envVars.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: envVars.CLOUDINARY_API_SECRET,
+  },
+  frontend: {
+    url: envVars.FRONT_END_URL,
   },
 };
