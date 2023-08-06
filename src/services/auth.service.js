@@ -84,7 +84,7 @@ const verifyEmail = async (verifyEmailToken) => {
       throw new Error('User not Found');
     }
     await Token.deleteMany({ user: user.id, type: tokenTypes.VERIFY_EMAIL });
-    const userData = await userService.updateUserById(user.id, { isEmailVerified: true });
+    const userData = await userService.updateUserById(user.id, { isEmailVerified: true }, { new: true });
 
     return userData;
   } catch (error) {
