@@ -15,7 +15,8 @@ const createUser = catchAsync(async (req, res) => {
 });
 
 const createPartnerDocument = catchAsync(async (req, res) => {
-  const userId = req.params;
+  const { userId } = req.params;
+
   const { vehicleType, color, model, chasisNumber, plateNumber, ownedSince } = req.body;
 
   const partnerDocument = { userId, vehicleType, color, model, chasisNumber, plateNumber, ownedSince };

@@ -76,26 +76,25 @@ const resetPassword = async (resetPasswordToken, newPassword) => {
  * @param {string} verifyEmailToken
  * @returns {Promise}
  */
-const verifyEmail = async (verifyEmailToken) => {
-  try {
-    const verifyEmailTokenDoc = await tokenService.verifyToken(verifyEmailToken, tokenTypes.VERIFY_EMAIL);
-    const user = await userService.getUserById(verifyEmailTokenDoc.user);
-    if (!user) {
-      throw new Error('User not Found');
-    }
-    await Token.deleteMany({ user: user.id, type: tokenTypes.VERIFY_EMAIL });
-    const userData = await userService.updateUserById(user.id, { isEmailVerified: true }, { new: true });
+// const verifyEmail = async (verifyEmailToken) => {
+//   try {
+//     const verifyEmailTokenDoc = await tokenService.verifyToken(verifyEmailToken, tokenTypes.VERIFY_EMAIL);
+//     const user = await userService.getUserById(verifyEmailTokenDoc.user);
+//     if (!user) {
+//       throw new Error('User not Found');
+//     }
+//     await Token.deleteMany({ user: user.id, type: tokenTypes.VERIFY_EMAIL });
+//     const userData = await userService.updateUserById(user.id, { isEmailVerified: true }, { new: true });
 
-    return userData;
-  } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Email verification failed');
-  }
-};
+//     return userData;
+//   } catch (error) {
+//     throw new ApiError(httpStatus.UNAUTHORIZED, 'Email verification failed');
+//   }
+// };
 
 module.exports = {
   loginUserWithEmailAndPassword,
   logout,
   refreshAuth,
   resetPassword,
-  verifyEmail,
 };

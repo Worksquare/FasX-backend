@@ -6,24 +6,22 @@ const createUser = {
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
     firstName: Joi.string().required(),
-    lastName: Joi.string().required(),
-    isVerified: Joi.boolean().default(false).required(),
-    role: Joi.string().valid('admin', 'user', 'partner').default('user').required(),
+    surName: Joi.string().required(),
+    address: Joi.string(),
+    phoneNumber: Joi.string(),
+    city: Joi.string(),
   }),
 };
 
-const createPartner = {
+// vehicleType, color, model, chasisNumber, plateNumber, ownedSince
+const createPartnerDocument = {
   body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().custom(password),
-    firstName: Joi.string().required(),
-    lastName: Joi.string().required(),
-    identification: Joi.string().required(),
-    profileImage: Joi.string(),
-    BVN: Joi.number().required(),
-    phoneNumber: Joi.string().required(),
-    role: Joi.string().valid('admin', 'user', 'partner').default('partner'),
-    vehicleType: Joi.string().valid('car', 'bicycle', 'bike', 'lorry', 'bus', 'boat').required(),
+    color: Joi.string().required().custom(password),
+    model: Joi.string().required(),
+    chasisNumber: Joi.string().required(),
+    plateNumber: Joi.string().required(),
+    ownedSince: Joi.string(),
+    vehicleType: Joi.string().valid('car', 'bicycle', 'bike', 'lorry', 'bus', 'boat'),
     locationGeometry: Joi.array().items(Joi.string()).required(),
   }),
 };
@@ -61,13 +59,12 @@ const updateUser = {
       email: Joi.string().required().email(),
       password: Joi.string().required().custom(password),
       firstName: Joi.string().required(),
-      lastName: Joi.string().required(),
+      surName: Joi.string().required(),
       identification: Joi.string().required(),
       profileImage: Joi.string(),
-      BVN: Joi.number().required(),
       phoneNumber: Joi.string().required(),
       vehicleType: Joi.string().valid('car', 'bicycle', 'bike', 'lorry', 'bus', 'boat').required(),
-      locationGeometry: Joi.array().items(Joi.string()).required(),
+      locationGeometry: Joi.array().items(Joi.string()),
     })
     .min(1),
 };
@@ -83,6 +80,6 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
-  createPartner,
+  createPartnerDocument,
   verifyPartner,
 };

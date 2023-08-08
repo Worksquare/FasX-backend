@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ['user', 'rider'], default: 'user' },
     vehicleType: { type: String, enum: ['car', 'bicycle', 'bike', 'lorry', 'bus', 'boat', 'ship'] },
     mediaIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Media' }],
-    isEmailVerified: { type: Boolean, default: false },
     email: {
       type: String,
       unique: true,
@@ -23,7 +22,7 @@ const userSchema = new mongoose.Schema(
         if (!validator.isEmail(value)) {
           throw new Error('Invalid email');
         }
-      }
+      },
     },
     password: {
       type: String,
@@ -33,10 +32,10 @@ const userSchema = new mongoose.Schema(
         }
       },
       private: true,
-    }
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
