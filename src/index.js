@@ -3,52 +3,36 @@ const app = require('./app');
 const config = require('./config/config');
 const logger = require('./config/logger');
 
-const startServer = async () => {
-  try {
-    await mongoose.connect(config.mongoose.url, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    logger.info('Connected to MongoDB');
+let server;
+mongoose.connect(config.mongoose.url, config.mongoose.options).then(() => {
+  logger.info('Connected to MongoDB');
+  server = app.listen(config.port, () => {
+    logger.info(`Listening to port ${config.port}`);
+  });
+});
 
-    const server = app.listen(config.port, () => {
-      logger.info(`Listening on port ${config.port}`);
+const exitHandler = () => {
+  if (server) {
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(1);
     });
-
-    const exitHandler = () => {
-      if (server) {
-        server.close(() => {
-          logger.info('Server closed');
-          process.exit(1);
-        });
-      } else {
-        process.exit(1);
-      }
-    };
-
-    process.on('SIGTERM', () => {
-      logger.info('SIGTERM received');
-      exitHandler();
-    });
-
-    process.on('SIGINT', () => {
-      logger.info('SIGINT received');
-      exitHandler();
-    });
-
-    process.on('uncaughtException', (error) => {
-      logger.error('Uncaught Exception:', error);
-      exitHandler();
-    });
-
-    process.on('unhandledRejection', (reason) => {
-      logger.error('Unhandled Rejection:', reason);
-      exitHandler();
-    });
-  } catch (error) {
-    logger.error('Error connecting to MongoDB:', error);
+  } else {
     process.exit(1);
   }
 };
 
-startServer();
+const unexpectedErrorHandler = (error) => {
+  logger.error(error);
+  exitHandler();
+};
+
+process.on('uncaughtException', unexpectedErrorHandler);
+process.on('unhandledRejection', unexpectedErrorHandler);
+
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received');
+  if (server) {
+    server.close();
+  }
+});

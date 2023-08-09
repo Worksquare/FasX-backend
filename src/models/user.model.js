@@ -2,21 +2,25 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const { toJSON, paginate } = require('./plugins');
+const { roles } = require('../config/roles');
 
-const userSchema = new mongoose.Schema(
+const userSchema = mongoose.Schema(
   {
-    profileImage: { type: String, trim: true },
-    firstName: { type: String, trim: true, required: true },
-    surName: { type: String, trim: true, required: true },
-    address: { type: String },
-    city: { type: String },
-    phoneNumber: { type: String, trim: true, unique: true, maxlength: 255 },
-    role: { type: String, enum: ['user', 'rider'], default: 'user' },
-    vehicleType: { type: String, enum: ['car', 'bicycle', 'bike', 'lorry', 'bus', 'boat', 'ship'] },
-    mediaIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Media' }],
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     email: {
       type: String,
+      required: true,
       unique: true,
+      trim: true,
       lowercase: true,
       validate(value) {
         if (!validator.isEmail(value)) {
@@ -26,13 +30,34 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
+      required: true,
+      trim: true,
+      minlength: 8,
       validate(value) {
         if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
           throw new Error('Password must contain at least one letter and one number');
         }
       },
-      private: true,
+      private: true, // used by the toJSON plugin
     },
+    role: {
+      type: String,
+      enum: roles,
+      default: 'user',
+    },
+    address: { type: String },
+    city: { type: String },
+    phoneNumber: { type: String, trim: true, unique: true, maxlength: 255 },
+    vehicleType: { type: String, enum: ['car', 'bicycle', 'bike', 'lorry', 'bus', 'boat', 'ship'] },
+    mediaIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Media' }],
+    locationGeometry: {
+      type: [String],
+    },
+    color: { type: String },
+    model: { type: String },
+    chasisNumber: { type: String },
+    plateNumber: { type: String },
+    ownedSince: { type: String },
   },
   {
     timestamps: true,

@@ -15,9 +15,10 @@ router
   .route('/:userId')
   .get(auth('getUsers'), validate(userValidation.getUser), userController.getUser)
   .patch(auth('manageUsers'), validate(userValidation.updateUser), userController.updateUser)
+  .put(auth('manageUsers'), validate(userValidation.upgradeRider), userController.upgradeToRider)
   .delete(auth('manageUsers'), validate(userValidation.deleteUser), userController.deleteUser);
 
-router.get('/riders', auth('getUsers'), userController.searchRiders);
+router.route('/riders/get').get(auth('getUsers'), validate(userValidation.getRider), userController.searchRiders);
 
 module.exports = router;
 
@@ -44,15 +45,17 @@ module.exports = router;
  *           schema:
  *             type: object
  *             required:
- *               - name
+ *               - firstName
+ *               - lastName
  *               - email
  *               - password
- *               - role
- *               - address
- *               - city
  *               - phoneNumber
+ *               - city
+ *               - address
  *             properties:
- *               name:
+ *               firstName:
+ *                 type: string
+ *               lastName:
  *                 type: string
  *               email:
  *                 type: string
@@ -63,24 +66,20 @@ module.exports = router;
  *                 format: password
  *                 minLength: 8
  *                 description: At least one number and one letter
- *               role:
- *                  type: string
- *                  enum: [user, admin]
- *               address:
+ *               phoneNumber:
  *                 type: string
  *               city:
  *                 type: string
- *               phoneNumber:
+ *               address:
  *                 type: string
- *                 description: must not be more than 255 character
  *             example:
  *               firstName: fake name
+ *               lastName: fake name
  *               email: fake@example.com
  *               password: password1
- *               role: user
- *               address: Ojo market
- *               city: lagos mainLand
- *               phoneNumber: 090000000045
+ *               phoneNumber: "09099934553"
+ *               city: lagos
+ *               address: ojo market
  *     responses:
  *       "201":
  *         description: Created
@@ -163,7 +162,7 @@ module.exports = router;
 
 /**
  * @swagger
- * /users/riders:
+ * /users/riders/get:
  *   get:
  *     summary: Search riders based on address, city, and vehicle type.
  *     tags: [Users]
@@ -262,6 +261,61 @@ module.exports = router;
  *               name: fake name
  *               email: fake@example.com
  *               password: password1
+ *     responses:
+ *       "200":
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *                $ref: '#/components/schemas/User'
+ *       "400":
+ *         $ref: '#/components/responses/DuplicateEmail'
+ *       "401":
+ *         $ref: '#/components/responses/Unauthorized'
+ *       "403":
+ *         $ref: '#/components/responses/Forbidden'
+ *       "404":
+ *         $ref: '#/components/responses/NotFound'
+ *
+ *   put:
+ *     summary: Upgrage User to Rider
+ *     description: Logged in users can only upgrade to becoming a rider.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User id
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               vehicleType:
+ *                 type: string
+ *               color:
+ *                 type: string
+ *               model:
+ *                 type: string
+ *               chasisNumber:
+ *                 type: string
+ *               plateNumber:
+ *                 type: string
+ *               ownedSince:
+ *                 type: string
+ *             example:
+ *               vehicleType: bikes
+ *               color: black
+ *               model: new
+ *               chasisNumber: "9372622"
+ *               plateNumber: "4749372622"
+ *               ownedSince: "4772622"
  *     responses:
  *       "200":
  *         description: OK

@@ -5,30 +5,13 @@ const catchAsync = require('../utils/catchAsync');
 const { userService } = require('../services');
 
 const createUser = catchAsync(async (req, res) => {
-  const { firstName, surName, email, password, address, city, phoneNumber } = req.body;
-
-  const userBody = { firstName, surName, email, password, address, city, phoneNumber };
-
-  const user = await userService.createUser(userBody);
-
-  res.status(httpStatus.CREATED).send(user);
-});
-
-const createPartnerDocument = catchAsync(async (req, res) => {
-  const { userId } = req.params;
-
-  const { vehicleType, color, model, chasisNumber, plateNumber, ownedSince } = req.body;
-
-  const partnerDocument = { userId, vehicleType, color, model, chasisNumber, plateNumber, ownedSince };
-
-  const user = await userService.createUserDocument(partnerDocument);
+  const user = await userService.createUser(req.body);
   res.status(httpStatus.CREATED).send(user);
 });
 
 const getUsers = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['name', 'role']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
-
   const result = await userService.queryUsers(filter, options);
   res.send(result);
 });
@@ -42,13 +25,17 @@ const getUser = catchAsync(async (req, res) => {
 });
 
 const searchRiders = catchAsync(async (req, res) => {
-  const { address, city, vehicleType } = req.query;
-  const riders = await userService.searchRiders(address, city, vehicleType);
+  const riders = await userService.searchRiders(req.query);
   res.json(riders);
 });
 
 const updateUser = catchAsync(async (req, res) => {
   const user = await userService.updateUserById(req.params.userId, req.body);
+  res.send(user);
+});
+
+const upgradeToRider = catchAsync(async (req, res) => {
+  const user = await userService.upgradeUserById(req.params.userId, req.body);
   res.send(user);
 });
 
@@ -63,6 +50,6 @@ module.exports = {
   getUser,
   searchRiders,
   updateUser,
+  upgradeToRider,
   deleteUser,
-  createPartnerDocument,
 };

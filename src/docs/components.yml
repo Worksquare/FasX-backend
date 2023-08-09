@@ -3,183 +3,39 @@ components:
     User:
       type: object
       properties:
-        id:
+        role:
+          type: string
+          enum: [user, admin]
+        media:
+          type: array
+        locationGeometry:
+          type: array
+        firstName:
+          type: string
+        lastName:
           type: string
         email:
           type: string
           format: email
-        name:
-          type: string
-        role:
-          type: string
-          enum: [user, admin]
-        address:
-          type: string
-        city:
-          type: string
         phoneNumber:
           type: string
-      example:
-        id: 5ebac534954b54139806c112
-        email: fake@example.com
-        firstName: fake firstName
-        surName: fake surName
-        role: user
-        address: ojo market
-        city: lagos mainland
-        phoneNumber: '+23490000000045'
-
-    PartnerDocument:
-      type: object
-      properties:
-        id:
-          type: string
-        vehicleType:
-          type: string
-          enum: [car, bike]
-        color:
-          type: string
-        model:
-          type: string
-        chasisNumber:
-          type: string
-        plateNumber:
-          type: string
-        ownedSince:
-          type: date
-      example:
-        id: 5ebac534954b54139806c112
-        color: car color
-        model: car model
-        chasisNumber: '23490000000045'
-        plateNumber: '23490000000045'
-        vehicleType: boat
-        role: rider
-        ownedSince: 1234567891
-
-    Order:
-      type: object
-      properties:
-        id:
-          type: string
-        productId:
-          type: string
-        partnerId:
-          type: string
-        deliveryId:
-          type: string
-        pickupId:
-          type: string
-      example:
-        id: 5ebac534954b54139806c112
-        productId: 5ebac534954b54139806c112
-        partnerId: 5ebac534954b54139806c112
-        deliveryId: 5ebac534954b54139806c112
-        pickupId: 5ebac534954b54139806c112
-
-    PickUpAddress:
-      type: object
-      properties:
-        id:
-          type: string
-        flatNumber:
-          type: string
-        houseNumber:
-          type: string
-        street:
-          type: string
-        town:
-          type: string
         city:
           type: string
-        lga:
+        address:
           type: string
-        state:
-          type: string
-      example:
-        id: 5ebac534954b54139806c112
-        flatNumber: 12B
-        houseNumber: 45
-        street: Burdillion view estate
-        town: Ikoyi
-        city: Lagos Island
-        lga: Lagos Island
-        state: Lagos state
-
-    DeliveryAddress:
-      type: object
-      properties:
         id:
           type: string
-        flatNumber:
-          type: string
-        houseNumber:
-          type: string
-        street:
-          type: string
-        town:
-          type: string
-        city:
-          type: string
-        lga:
-          type: string
-        state:
-          type: string
-        receiverPhoneNumber:
-          type: array
-        receiverName:
-          type: string
       example:
-        id: 5ebac534954b54139806c112
-        flatNumber: 12B
-        houseNumber: 45
-        street: Burdillion view estate
-        town: Ikoyi
-        city: Lagos Island
-        lga: Lagos Island
-        state: Lagos state
-        receiverPhoneNumber: ['098887654321', '1234567890']
-        receiverName: Mr Tinunu Bola
-
-    Product:
-      type: object
-      properties:
-        id:
-          type: string
-        item:
-          type: string
-        color:
-          type: string
-        vehicleType:
-          type: string
-          enum: [car, boat, lorry, bike, bicycle]
-        description:
-          type: string
-        weightOfItem:
-          type: string
-        numberOfItem:
-          type: number
-        insurance:
-          type: boolean
-        productForm:
-          type: string
-          enum: [new, old, used]
-        mediaIds:
-          type: string
-        productUsefulness:
-          type: string
-      example:
-        id: 5ebac534954b54139806c112
-        item: Samsung A03s
-        color: red
-        vehicleType: lorry
-        description: this is a good phone ooo
-        weightOfItem: 5kg
-        numberOfItem: 12
-        insurance: false
-        productForm: new
-        mediaIds: 5ebac534954b54139806c112
-        productusefulness: this is used for communication
+        role: 'user'
+        mediaIds: []
+        locationGeometry: []
+        firstName: 'fake name'
+        lastName: 'fake name'
+        email: 'fake@example.com'
+        phoneNumber: '09099934553'
+        city: 'lagos'
+        address: 'ojo market'
+        id: '64d409cac76d5232087dd25f'
 
     Token:
       type: object
@@ -190,7 +46,7 @@ components:
           type: string
           format: date-time
       example:
-        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
+        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         expires: 2020-05-12T16:18:04.793Z
 
     AuthTokens:

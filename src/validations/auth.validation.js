@@ -6,10 +6,10 @@ const register = {
     email: Joi.string().required().email(),
     password: Joi.string().required().custom(password),
     firstName: Joi.string().required(),
-    surName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    phoneNumber: Joi.string().required(),
     address: Joi.string().required(),
     city: Joi.string().required(),
-    phoneNumber: Joi.string().required(),
   }),
 };
 
@@ -47,12 +47,6 @@ const resetPassword = {
   }),
 };
 
-const verifyEmail = {
-  query: Joi.object().keys({
-    token: Joi.string().required(),
-  }),
-};
-
 module.exports = {
   register,
   login,
@@ -60,5 +54,4 @@ module.exports = {
   refreshTokens,
   forgotPassword,
   resetPassword,
-  verifyEmail,
 };

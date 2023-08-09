@@ -2,14 +2,10 @@ const express = require('express');
 const validate = require('../../middlewares/validate');
 const authValidation = require('../../validations/auth.validation');
 const authController = require('../../controllers/auth.controller');
-const userController = require('../../controllers/user.controller');
-const userValidation = require('../../validations/user.validation');
 
 const router = express.Router();
 
 router.post('/register', validate(authValidation.register), authController.register);
-router.post('/register/partner', validate(userValidation.createUser), userController.createUser);
-router.put('/register/partner/:id', validate(userValidation.createPartnerDocument), userController.createPartnerDocument);
 router.post('/login', validate(authValidation.login), authController.login);
 router.post('/logout', validate(authValidation.logout), authController.logout);
 router.post('/refresh-tokens', validate(authValidation.refreshTokens), authController.refreshTokens);
@@ -39,16 +35,16 @@ module.exports = router;
  *             type: object
  *             required:
  *               - firstName
- *               - surName
+ *               - lastName
  *               - email
  *               - password
- *               - address
- *               - city
  *               - phoneNumber
+ *               - city
+ *               - address
  *             properties:
  *               firstName:
  *                 type: string
- *               surName:
+ *               lastName:
  *                 type: string
  *               email:
  *                 type: string
@@ -59,21 +55,20 @@ module.exports = router;
  *                 format: password
  *                 minLength: 8
  *                 description: At least one number and one letter
- *               address:
+ *               phoneNumber:
  *                 type: string
  *               city:
  *                 type: string
- *               phoneNumber:
+ *               address:
  *                 type: string
- *                 description: must not be more than 255 character
  *             example:
- *               firstName: "fake firstName"
- *               surName: "fake surName"
- *               email: "fake@example.com"
- *               password: "password1"
- *               address: "Ojo market"
- *               city: "lagos mainLand"
- *               phoneNumber: "+23490000000045"
+ *               firstName: fake name
+ *               lastName: fake name
+ *               email: fake@example.com
+ *               password: password1
+ *               phoneNumber: "09099934553"
+ *               city: lagos
+ *               address: ojo market
  *     responses:
  *       "201":
  *         description: Created
@@ -84,140 +79,6 @@ module.exports = router;
  *               properties:
  *                 user:
  *                   $ref: '#/components/schemas/User'
- *                 tokens:
- *                   $ref: '#/components/schemas/AuthTokens'
- *       "400":
- *         $ref: '#/components/responses/DuplicateEmail'
- */
-
-/**
- * @swagger
- * /auth/register/partner:
- *   post:
- *     summary: Register as a partner
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - firstName
- *               - surName
- *               - email
- *               - password
- *               - address
- *               - city
- *               - phoneNumber
- *             properties:
- *               firstName:
- *                 type: string
- *               surName:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *                 description: must be unique
- *               password:
- *                 type: string
- *                 format: password
- *                 minLength: 8
- *                 description: At least one number and one letter
- *               address:
- *                 type: string
- *               city:
- *                 type: string
- *               phoneNumber:
- *                 type: string
- *                 description: must not be more than 255 character
- *             example:
- *               firstName: "faker firstName"
- *               surName: "faker surName"
- *               email: "faker@example.com"
- *               password: "password1"
- *               address: "Ojo market"
- *               city: "lagos mainLand"
- *               phoneNumber: "+23490000000045"
- *
- *     responses:
- *       "201":
- *         description: Created
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *                 tokens:
- *                   $ref: '#/components/schemas/AuthTokens'
- *       "400":
- *         $ref: '#/components/responses/DuplicateEmail'
- */
-
-/**
- * @swagger
- * /auth/register/partner/{userId}:
- *   post:
- *     summary: Register as a partner document
- *     tags: [Auth]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *         description: User id
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - vehicleType,
- *               - color
- *               - model
- *               - chasisNumber
- *               - plateNumber
- *               - ownedSince
- *             properties:
- *               color:
- *                 type: string
- *               model:
- *                 type: string
- *               chasisNumber:
- *                 type: string.
- *               plateNumber:
- *                 type: string
- *               vehicleType:
- *                 type: string
- *                 enum:
- *                   - car
- *                   - bike
- *                   - boat
- *                   - others
- *               ownedSince:
- *                 type: date
- *             example:
- *               color: "car color"
- *               model: "car model"
- *               chasisNumber: "89398339383"
- *               plateNumber: "909383838833"
- *               vehicleType: "boat"
- *               ownedSince: 1234567891
- *
- *     responses:
- *       "200":
- *         description: Created Partner document
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 user:
- *                   $ref: '#/components/schemas/PartnerDocument'
  *                 tokens:
  *                   $ref: '#/components/schemas/AuthTokens'
  *       "400":

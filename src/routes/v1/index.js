@@ -26,6 +26,34 @@ const defaultRoutes = [
     path: '/docs',
     route: docsRoute,
   },
+  {
+    path: '/articles',
+    route: articleRoute,
+  },
+  {
+    path: '/medias',
+    route: mediaRoute,
+  },
+  {
+    path: '/uploads',
+    route: uploadRoute,
+  },
+  {
+    path: '/products',
+    route: productRoute,
+  },
+  {
+    path: '/pickup-address',
+    route: pickupAddressRoute,
+  },
+  {
+    path: '/delivery-address',
+    route: deliveryAddressRoute,
+  },
+  {
+    path: '/order',
+    route: orderRoute,
+  },
 ];
 
 const devRoutes = [

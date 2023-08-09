@@ -8,7 +8,7 @@ const swaggerDef = {
     version,
     license: {
       name: 'MIT',
-      url: 'https://github.com/Worksquare/FasX#readme',
+      url: 'https://github.com/Worksquare/FasX-backend/blob/main/LICENSE',
     },
   },
   servers: [
