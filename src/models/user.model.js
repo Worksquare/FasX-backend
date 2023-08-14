@@ -58,6 +58,7 @@ const userSchema = mongoose.Schema(
     chasisNumber: { type: String },
     plateNumber: { type: String },
     ownedSince: { type: String },
+    balance: { type: String },
   },
   {
     timestamps: true,
